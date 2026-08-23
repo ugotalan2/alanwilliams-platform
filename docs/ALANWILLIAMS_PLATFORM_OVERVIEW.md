@@ -2,23 +2,28 @@
 
 ## Purpose
 
-`alanwilliams-platform` is the shared platform for the AlanWilliams Apps ecosystem.
+`alanwilliams-platform` is the shared platform for the AlanWilliams Apps
+ecosystem.
 
-It owns the cross-application account experience and canonical platform identity used by connected apps such as Agenda, Budget, Chores, Goals, and Fitness.
+It owns the cross-application account experience and canonical platform
+identity used by connected apps such as Agenda, Budget, Chores, Goals,
+and Fitness.
 
-The platform is not intended to contain the detailed domain logic of each application. Each app remains independently deployable and owns its own domain data, settings, permissions, and workflows.
+The platform is not intended to contain the detailed domain logic of
+each application. Each app remains independently deployable and owns its
+own domain data, settings, permissions, and workflows.
 
 ## Domain
 
 Primary platform domain:
 
-```text
+``` text
 alanwilliams.app
 ```
 
 Application domains:
 
-```text
+``` text
 agenda.alanwilliams.app  -> Agenda
 budget.alanwilliams.app  -> Budget
 chores.alanwilliams.app  -> Chores
@@ -28,14 +33,14 @@ fitness.alanwilliams.app -> Fitness (possible/planned)
 
 Shared API convention:
 
-```text
+``` text
 Production: api.alanwilliams.app/<service>/...
 Test:       api-test.alanwilliams.app/<service>/...
 ```
 
 Examples:
 
-```text
+``` text
 /api routing concept
 /agenda/...
 /platform/...
@@ -44,26 +49,31 @@ Examples:
 
 ## Platform Vision
 
-AlanWilliams Apps should feel like one connected product family even though individual apps are independently deployable and may use separate databases.
+AlanWilliams Apps should feel like one connected product family even
+though individual apps are independently deployable and may use separate
+databases.
 
 The target experience is:
 
-```text
+``` text
 one Clerk login
 -> one canonical AlanWilliams Person
 -> multiple connected apps
 -> app-specific memberships, permissions, settings, and data
 ```
 
-The platform landing page will initially provide sign-in/account functionality and route users to available apps. As more apps launch, it becomes the authenticated app launcher.
+The platform landing page will initially provide sign-in/account
+functionality and route users to available apps. As more apps launch, it
+becomes the authenticated app launcher.
 
 ## Canonical Person Direction
 
-`Person` is a platform-owned identity shared across all AlanWilliams Apps.
+`Person` is a platform-owned identity shared across all AlanWilliams
+Apps.
 
 A person represents the same human everywhere:
 
-```text
+``` text
 Clerk user
    |
    v
@@ -76,36 +86,40 @@ Platform Person
 
 Core rules:
 
-- Clerk owns authentication and login credentials.
-- The Platform owns the canonical AlanWilliams `Person` identity.
-- A person can exist before they create a Clerk account.
-- Clerk user ID becomes the durable authentication link after verified account linking.
-- Email may help discover or claim an existing person, but email alone is not the durable identity key.
-- Person merge/reconciliation is a platform concern because duplicate identity can affect multiple apps.
-- There is no globally searchable public AlanWilliams user directory.
+-   Clerk owns authentication and login credentials.
+-   The Platform owns the canonical AlanWilliams `Person` identity.
+-   A person can exist before they create a Clerk account.
+-   Clerk user ID becomes the durable authentication link after verified
+    account linking.
+-   Email may help discover or claim an existing person, but email alone
+    is not the durable identity key.
+-   Person merge/reconciliation is a platform concern because duplicate
+    identity can affect multiple apps.
+-   There is no globally searchable public AlanWilliams user directory.
 
 ## Shared vs App-Specific Ownership
 
 Platform-owned concerns:
 
-- canonical Person
-- Clerk user-to-Person linkage
-- global account/profile information
-- identity reconciliation and merge state
-- app launcher/account experience
-- cross-app identity contracts
-- shared platform-level preferences when they are genuinely global
+-   canonical Person
+-   Clerk user-to-Person linkage
+-   global account/profile information
+-   identity reconciliation and merge state
+-   app launcher/account experience
+-   cross-app identity contracts
+-   shared platform-level preferences when they are genuinely global
 
 App-owned concerns:
 
-- memberships
-- domain roles and permissions
-- domain-specific preferences
-- app workflows
-- app data
-- app-specific authorization
+-   memberships
+-   domain roles and permissions
+-   domain-specific preferences
+-   app workflows
+-   app data
+-   app-specific authorization
 
-For example, Agenda owns organization/meeting permissions and Budget will own budget/workspace permissions.
+For example, Agenda owns organization/meeting permissions and Budget
+will own budget/workspace permissions.
 
 ## Repository Convention
 
@@ -113,7 +127,7 @@ Connected repositories use the `alanwilliams-` prefix.
 
 Current/planned naming:
 
-```text
+``` text
 alanwilliams-platform
 alanwilliams-agenda
 alanwilliams-budget
@@ -121,22 +135,25 @@ alanwilliams-chores
 alanwilliams-spring-security
 ```
 
-Repo names represent a deployable product or a clearly reusable platform component.
+Repo names represent a deployable product or a clearly reusable platform
+component.
 
 ## Documentation Convention
 
-The ChatGPT Project may contain documents from multiple repositories. Markdown filenames are therefore unique across the ecosystem rather than relying on repeated names such as `ARCHITECTURE.md`.
+The ChatGPT Project may contain documents from multiple repositories.
+Markdown filenames are therefore unique across the ecosystem rather than
+relying on repeated names such as `ARCHITECTURE.md`.
 
 Platform documents:
 
-```text
+``` text
 ALANWILLIAMS_PLATFORM_OVERVIEW.md
 ALANWILLIAMS_PLATFORM_ARCHITECTURE.md
 ```
 
 Repo-specific documents use the same pattern, for example:
 
-```text
+``` text
 ALANWILLIAMS_AGENDA_OVERVIEW.md
 ALANWILLIAMS_AGENDA_ARCHITECTURE.md
 ALANWILLIAMS_SPRING_SECURITY_OVERVIEW.md
@@ -145,9 +162,11 @@ ALANWILLIAMS_SPRING_SECURITY_ARCHITECTURE.md
 
 Documentation ownership rule:
 
-> Platform docs define cross-repo contracts. Repo docs define the internals of that repo.
+> Platform docs define cross-repo contracts. Repo docs define the
+> internals of that repo.
 
-Detailed app-domain documentation should not be duplicated into the Platform architecture.
+Detailed app-domain documentation should not be duplicated into the
+Platform architecture.
 
 ## Current Infrastructure
 
@@ -155,50 +174,54 @@ The current deployed application infrastructure is self-hosted.
 
 Physical host:
 
-- Windows/Plex PC at `10.0.0.100`
-- Intel i5-12600K, 32 GB RAM, RX 6700 XT 12 GB, ~12 TB storage
-- Physical backup location: `D:\ServerBackups`
+-   Windows/Plex PC at `10.0.0.100`
+-   Intel i5-12600K, 32 GB RAM, RX 6700 XT 12 GB, \~12 TB storage
+-   Physical backup location: `D:\ServerBackups`
 
 Ubuntu VM:
 
-- Ubuntu 26.04 LTS
-- VirtualBox
-- reserved LAN IP `10.0.0.27`
-- Docker Engine
-- America/Chicago timezone
+-   Ubuntu 26.04 LTS
+-   VirtualBox
+-   reserved LAN IP `10.0.0.27`
+-   Docker Engine
+-   America/Chicago timezone
 
 Shared infrastructure includes:
 
-- PostgreSQL 17 in Docker
-- Cloudflare DNS and Tunnel
-- Docker networks
-- GitHub Actions deployment
-- physical-disk backups plus Google Drive off-site copies
+-   PostgreSQL 17 in Docker
+-   Cloudflare DNS and Tunnel
+-   Docker networks
+-   GitHub Actions deployment
+-   physical-disk backups plus Google Drive off-site copies
 
-The current infrastructure was proven through Ubuntu VM reboot and full physical Windows-host reboot recovery.
+The current infrastructure was proven through Ubuntu VM reboot and full
+physical Windows-host reboot recovery.
 
 ## Authentication Direction
 
 Clerk is the shared identity and SSO provider.
 
-AlanWilliams Apps will not store passwords, password hashes, recovery credentials, or implement its own authorization server.
+AlanWilliams Apps will not store passwords, password hashes, recovery
+credentials, or implement its own authorization server.
 
-Each Java backend validates Clerk JWTs locally. Reusable Spring Security integration belongs in `alanwilliams-spring-security`.
+Each Java backend validates Clerk JWTs locally. Reusable Spring Security
+integration belongs in `alanwilliams-spring-security`.
 
-The Platform backend then resolves authenticated Clerk identity to canonical Platform Person when needed.
+The Platform backend then resolves authenticated Clerk identity to
+canonical Platform Person when needed.
 
 ## Database Direction
 
 Introduce dedicated platform databases:
 
-```text
+``` text
 platform_prod
 platform_test
 ```
 
 App databases remain separate:
 
-```text
+``` text
 agenda_prod
 agenda_test
 budget_prod
@@ -207,7 +230,8 @@ chores_prod
 chores_test
 ```
 
-Cross-database person references are platform Person IDs by application contract rather than PostgreSQL foreign keys across separate databases.
+Cross-database person references are platform Person IDs by application
+contract rather than PostgreSQL foreign keys across separate databases.
 
 ## Shared UI / Branding
 
@@ -232,7 +256,7 @@ Purple   -> Platform / Account / Auth
 
 General header direction:
 
-```text
+``` text
 [A] Agenda v                         [Profile] v
 ```
 
@@ -277,6 +301,30 @@ a one-time opt-in discovery prompt.
 Shared UI should use semantic design tokens rather than hard-coded
 Bootstrap colors.
 
+## Technology Baseline
+
+Shared implementation baseline:
+
+``` text
+Java             25 LTS
+Spring Boot      4.1.x
+Maven            3.9.x
+Node.js          24.x LTS
+npm              11.x
+React            19.2.x
+React Router     7.x
+TypeScript       6.0.x
+Vite             8.2.x
+Bootstrap        5.3.x
+Font Awesome     7.3.x
+Vitest           4.x
+PostgreSQL       17
+```
+
+New work uses the newest stable supported baseline with preference for
+LTS runtimes. Exact patch versions are repository/package-lock concerns;
+Platform architecture owns major/minor baseline decisions.
+
 ## Current Status
 
 Agenda is currently the production application and is running
@@ -308,10 +356,10 @@ been implemented as the Platform frontend/backend/database.
 
 ## Explicitly Deferred
 
-- Full microservice decomposition merely for scale speculation
-- Dedicated auth database/service separate from Clerk and Platform identity
-- Global public user directory
-- Native iOS/Android apps
-- Automated SMS delivery
-- Full Handbook mirroring/catalog synchronization
-
+-   Full microservice decomposition merely for scale speculation
+-   Dedicated auth database/service separate from Clerk and Platform
+    identity
+-   Global public user directory
+-   Native iOS/Android apps
+-   Automated SMS delivery
+-   Full Handbook mirroring/catalog synchronization

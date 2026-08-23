@@ -2,21 +2,96 @@
 
 ## Scope
 
-This document is the source of truth for cross-repository architecture and integration contracts across AlanWilliams Apps.
+This document is the source of truth for cross-repository architecture
+and integration contracts across AlanWilliams Apps.
 
-Detailed Agenda domain architecture belongs in `ALANWILLIAMS_AGENDA_ARCHITECTURE.md`. Reusable Spring/Clerk implementation details belong in `ALANWILLIAMS_SPRING_SECURITY_ARCHITECTURE.md`.
+Detailed Agenda domain architecture belongs in
+`ALANWILLIAMS_AGENDA_ARCHITECTURE.md`. Reusable Spring/Clerk
+implementation details belong in
+`ALANWILLIAMS_SPRING_SECURITY_ARCHITECTURE.md`.
 
 ## Architecture Principles
 
-- Keep apps independently deployable while sharing platform conventions, identity, authentication, UI patterns, and API routing.
-- Use Clerk for authentication/SSO; do not build or store password credentials.
-- Maintain one canonical Platform Person across all connected apps.
-- Keep app-specific authorization and domain data within each app.
-- Prefer separately deployable components without prematurely decomposing the system into many microservices.
-- Validate Clerk JWTs locally in each Java backend rather than routing every request through a central auth service.
-- Preserve historical identity and relationships rather than rewriting people when roles/memberships change.
-- Prevent account enumeration and cross-app privacy leaks.
-- Use stable cross-repo contracts and avoid duplicating detailed domain documentation between repositories.
+-   Keep apps independently deployable while sharing platform
+    conventions, identity, authentication, UI patterns, and API routing.
+-   Use Clerk for authentication/SSO; do not build or store password
+    credentials.
+-   Maintain one canonical Platform Person across all connected apps.
+-   Keep app-specific authorization and domain data within each app.
+-   Prefer separately deployable components without prematurely
+    decomposing the system into many microservices.
+-   Validate Clerk JWTs locally in each Java backend rather than routing
+    every request through a central auth service.
+-   Preserve historical identity and relationships rather than rewriting
+    people when roles/memberships change.
+-   Prevent account enumeration and cross-app privacy leaks.
+-   Use stable cross-repo contracts and avoid duplicating detailed
+    domain documentation between repositories.
+
+## Technology Baseline
+
+AlanWilliams Apps should start new work on the newest stable, supported
+baseline that favors long support life over short-lived non-LTS
+releases. Exact patch versions remain locked in each repository's
+`package-lock.json`, Maven wrapper, and `pom.xml`; this document defines
+the shared major/minor compatibility baseline.
+
+### Frontend
+
+-   React `19.2.x`
+-   React Router `7.x`
+-   TypeScript `6.0.x`
+-   Vite `8.2.x`
+-   Bootstrap `5.3.x`
+-   Font Awesome `7.3.x`
+-   React Font Awesome `3.x`
+-   Vitest `4.x`
+-   Node.js `24.x LTS`
+-   npm `11.x`
+
+Node policy:
+
+-   Prefer the newest active LTS Node line for deployed builds and the
+    shared baseline.
+-   Do not standardize production/deployment builds on a Node `Current`
+    release solely because it is newer.
+-   Re-evaluate Node `26.x` after it enters LTS rather than requiring an
+    interim migration now.
+
+### Java Backend
+
+-   Java `25 LTS`
+-   Spring Boot `4.1.x`
+-   Maven `3.9.x`
+
+Java policy:
+
+-   New services target the newest LTS Java version supported by the
+    selected stable Spring Boot line.
+-   Java `25` is the current Platform baseline.
+-   Keep JDK patch/security releases current within the Java 25 LTS
+    line.
+-   Do not move the shared baseline to a non-LTS Java release solely
+    because it is newer.
+
+### Data / Infrastructure
+
+-   PostgreSQL `17`
+-   Docker Engine
+-   Docker Compose
+
+### Versioning Policy
+
+-   New repositories start from this Platform baseline unless an
+    explicit compatibility reason is documented.
+-   Existing repositories converge to the baseline during planned
+    maintenance.
+-   Major/minor framework changes are deliberate Platform decisions and
+    are recorded here.
+-   Patch and security updates within the approved baseline are routine
+    maintenance and do not require an architecture decision.
+-   A repo-specific architecture document records any intentional
+    deviation from the Platform baseline.
 
 ## Naming Conventions
 
@@ -44,33 +119,33 @@ directories.
 
 Owns:
 
-- canonical Person
-- Clerk user-to-Person linkage
-- global profile/account data
-- identity reconciliation and merge
-- platform/account API
-- `alanwilliams.app` launcher/account frontend
-- cross-app identity/application metadata as needed
+-   canonical Person
+-   Clerk user-to-Person linkage
+-   global profile/account data
+-   identity reconciliation and merge
+-   platform/account API
+-   `alanwilliams.app` launcher/account frontend
+-   cross-app identity/application metadata as needed
 
 ### `alanwilliams-agenda`
 
 Owns:
 
-- Agenda domain
-- organizations and Agenda memberships
-- meeting types and meetings
-- questions, assignments, reminders, training/documents
-- Agenda-specific permissions and settings
-- Agenda frontend/backend deployment
+-   Agenda domain
+-   organizations and Agenda memberships
+-   meeting types and meetings
+-   questions, assignments, reminders, training/documents
+-   Agenda-specific permissions and settings
+-   Agenda frontend/backend deployment
 
 ### `alanwilliams-budget`
 
 Will own:
 
-- budget/workspace data
-- Budget membership and authorization
-- Budget-specific settings
-- Budget frontend/backend deployment
+-   budget/workspace data
+-   Budget membership and authorization
+-   Budget-specific settings
+-   Budget frontend/backend deployment
 
 ### `alanwilliams-spring-security`
 
@@ -78,19 +153,20 @@ Reusable Java library. It is not a deployed auth microservice.
 
 Owns generic reusable Spring Security + Clerk integration such as:
 
-- JWT validation configuration
-- issuer/JWKS conventions
-- authenticated Clerk principal extraction
-- common 401/403 behavior where appropriate
-- security test helpers
+-   JWT validation configuration
+-   issuer/JWKS conventions
+-   authenticated Clerk principal extraction
+-   common 401/403 behavior where appropriate
+-   security test helpers
 
-It does not own Person, Agenda authorization, Budget authorization, or any domain membership.
+It does not own Person, Agenda authorization, Budget authorization, or
+any domain membership.
 
 ## Canonical Identity Model
 
 The platform identity model is:
 
-```text
+``` text
 Clerk User
     |
     | verified authentication link
@@ -107,31 +183,31 @@ Platform Person
 
 Clerk owns:
 
-- authentication
-- verified sign-in identity/session
-- account recovery
-- MFA/passkeys/social sign-in if enabled
+-   authentication
+-   verified sign-in identity/session
+-   account recovery
+-   MFA/passkeys/social sign-in if enabled
 
 Platform owns:
 
-- canonical Person record
-- linkage from Clerk user ID to Person
-- platform profile/contact data
-- duplicate reconciliation/merge
+-   canonical Person record
+-   linkage from Clerk user ID to Person
+-   platform profile/contact data
+-   duplicate reconciliation/merge
 
 Apps own:
 
-- app memberships
-- app permissions
-- app roles
-- app preferences
-- domain authorization
+-   app memberships
+-   app permissions
+-   app roles
+-   app preferences
+-   domain authorization
 
 ### Person Before Account
 
 A Platform Person may exist before signup:
 
-```text
+``` text
 person.id = 123
 person.name = "Jane Smith"
 person.clerk_user_id = null
@@ -139,22 +215,25 @@ person.clerk_user_id = null
 
 After a verified Clerk identity is claimed/linked:
 
-```text
+``` text
 person.id = 123
 person.clerk_user_id = "user_..."
 ```
 
 Rule:
 
-> Email discovers identity; Clerk user ID establishes authenticated identity.
+> Email discovers identity; Clerk user ID establishes authenticated
+> identity.
 
-Changing email must not create a new Person or rewrite historical relationships.
+Changing email must not create a new Person or rewrite historical
+relationships.
 
 ## Platform Person Suggested Shape
 
-The final schema should be designed during implementation, but current conceptual fields are:
+The final schema should be designed during implementation, but current
+conceptual fields are:
 
-```text
+``` text
 person
 - id
 - name
@@ -172,11 +251,14 @@ Exact naming may be refined during schema implementation.
 
 There is no globally searchable public AlanWilliams Apps directory.
 
-Entering an email must not reveal whether that address already has an AlanWilliams account.
+Entering an email must not reveal whether that address already has an
+AlanWilliams account.
 
-The Platform backend may privately resolve an email to an existing Person for legitimate invitation/claim workflows, but applications should return neutral UI outcomes such as:
+The Platform backend may privately resolve an email to an existing
+Person for legitimate invitation/claim workflows, but applications
+should return neutral UI outcomes such as:
 
-```text
+``` text
 Invitation sent
 ```
 
@@ -184,23 +266,26 @@ rather than account-existence signals.
 
 ## Person Merge / Reconciliation
 
-Merge is a platform identity operation because the Person can be referenced by multiple applications.
+Merge is a platform identity operation because the Person can be
+referenced by multiple applications.
 
 A merge must:
 
-- preserve the canonical target Person
-- retain the target Clerk user ID
-- mark the source as merged rather than hard-delete it
-- provide enough mapping/audit information for app relationships to be repointed safely
-- avoid silently merging based only on name
+-   preserve the canonical target Person
+-   retain the target Clerk user ID
+-   mark the source as merged rather than hard-delete it
+-   provide enough mapping/audit information for app relationships to be
+    repointed safely
+-   avoid silently merging based only on name
 
-Exact distributed merge coordination will be designed before implementation because app databases are separate.
+Exact distributed merge coordination will be designed before
+implementation because app databases are separate.
 
 ## Authentication Request Flow
 
 Each Java backend validates Clerk JWTs locally:
 
-```text
+``` text
 Browser / React app
 -> Clerk session/token
 -> Authorization: Bearer <token>
@@ -214,13 +299,15 @@ The Platform backend is not an inline auth gateway.
 
 Do not require:
 
-```text
+``` text
 Agenda request -> Platform auth request -> Clerk -> Agenda
 ```
 
 for every API call.
 
-When an app needs canonical Person resolution, it uses the Platform identity contract rather than re-implementing independent Person creation.
+When an app needs canonical Person resolution, it uses the Platform
+identity contract rather than re-implementing independent Person
+creation.
 
 ## Environment Isolation
 
@@ -228,7 +315,7 @@ Use separate Clerk test and production configurations.
 
 Production:
 
-```text
+``` text
 alanwilliams.app
 agenda.alanwilliams.app
 budget.alanwilliams.app
@@ -237,39 +324,43 @@ api.alanwilliams.app
 
 Test examples:
 
-```text
+``` text
 agenda-test.alanwilliams.app
 api-test.alanwilliams.app
 ```
 
-Only intended sibling domains should participate in shared authentication.
+Only intended sibling domains should participate in shared
+authentication.
 
 ## API Convention
 
 Use one API hostname per environment with service path prefixes:
 
-```text
+``` text
 Production: https://api.alanwilliams.app/<service>/...
 Test:       https://api-test.alanwilliams.app/<service>/...
 ```
 
 Examples:
 
-```text
+``` text
 /platform/...
 /agenda/...
 /budget/...
 ```
 
-A dedicated router/reverse-proxy service can be introduced when multiple backends make it worthwhile. Do not introduce one solely to satisfy a microservice pattern.
+A dedicated router/reverse-proxy service can be introduced when multiple
+backends make it worthwhile. Do not introduce one solely to satisfy a
+microservice pattern.
 
 ## Deployment Model
 
-Apps and platform components are separately deployable Docker images/containers even when hosted on the same Ubuntu VM.
+Apps and platform components are separately deployable Docker
+images/containers even when hosted on the same Ubuntu VM.
 
 Target direction:
 
-```text
+``` text
 postgres
 cloudflared
 alanwilliams-platform-prod-backend
@@ -281,34 +372,38 @@ alanwilliams-agenda-test-frontend
 ...future apps
 ```
 
-Exact container names will be standardized during the next infrastructure/naming pass.
+Exact container names will be standardized during the next
+infrastructure/naming pass.
 
-The separately deployable boundary is intentional so services can later be moved, replicated, or decomposed further without first untangling one monolithic deployment.
+The separately deployable boundary is intentional so services can later
+be moved, replicated, or decomposed further without first untangling one
+monolithic deployment.
 
 ## Database Ownership
 
 Platform:
 
-```text
+``` text
 platform_prod
 platform_test
 ```
 
 Agenda:
 
-```text
+``` text
 agenda_prod
 agenda_test
 ```
 
 Future Budget:
 
-```text
+``` text
 budget_prod
 budget_test
 ```
 
-Each application owns its database. PostgreSQL cross-database foreign keys are not assumed.
+Each application owns its database. PostgreSQL cross-database foreign
+keys are not assumed.
 
 App records that reference Platform Person IDs do so by stable contract.
 
@@ -316,7 +411,7 @@ App records that reference Platform Person IDs do so by stable contract.
 
 Current infrastructure:
 
-```text
+``` text
 Windows physical host
 -> VirtualBox Ubuntu VM
 -> Docker
@@ -327,19 +422,19 @@ Windows physical host
 
 Physical host:
 
-- Windows/Plex PC: `10.0.0.100`
+-   Windows/Plex PC: `10.0.0.100`
 
 Ubuntu VM:
 
-- Ubuntu 26.04 LTS
-- `10.0.0.27`
-- Docker Engine
+-   Ubuntu 26.04 LTS
+-   `10.0.0.27`
+-   Docker Engine
 
 Cloudflare:
 
-- DNS managed by Cloudflare
-- Cloudflare Tunnel exposes services without inbound router ports
-- registrar remains name.com
+-   DNS managed by Cloudflare
+-   Cloudflare Tunnel exposes services without inbound router ports
+-   registrar remains name.com
 
 ## Shared Frontend / Platform Site Direction
 
@@ -507,7 +602,7 @@ and tested at phone widths first, then expanded for tablet/desktop.
 
 App identities:
 
-```text
+``` text
 Agenda       Blue A
 Budget       Green B
 Chores       Amber/Yellow C
@@ -549,7 +644,7 @@ Mobile:
 
 General app navigation guideline:
 
-```text
+``` text
 Home + up to 3 primary destinations + More
 ```
 
@@ -557,13 +652,13 @@ Home + up to 3 primary destinations + More
 
 Repository:
 
-```text
+``` text
 alanwilliams-<component>
 ```
 
 Examples:
 
-```text
+``` text
 alanwilliams-platform
 alanwilliams-agenda
 alanwilliams-budget
@@ -572,7 +667,7 @@ alanwilliams-spring-security
 
 Java package direction:
 
-```text
+``` text
 com.alanwilliams.platform
 com.alanwilliams.agenda
 com.alanwilliams.budget
@@ -581,7 +676,7 @@ com.alanwilliams.security
 
 Database names stay app-focused:
 
-```text
+``` text
 platform_prod
 agenda_prod
 budget_prod
@@ -589,7 +684,7 @@ budget_prod
 
 API service prefixes stay app-focused:
 
-```text
+``` text
 /platform
 /agenda
 /budget
@@ -603,9 +698,12 @@ test and production deployments have been migrated to the standardized
 
 Cross-repo contracts are documented here.
 
-Repo-specific architecture documents consume those contracts and should not duplicate them in full.
+Repo-specific architecture documents consume those contracts and should
+not duplicate them in full.
 
-If a repo-specific document conflicts with this document on a cross-repo concern, update the documents together; the Platform architecture is the intended source of truth for that boundary.
+If a repo-specific document conflicts with this document on a cross-repo
+concern, update the documents together; the Platform architecture is the
+intended source of truth for that boundary.
 
 ## Current Locked Decisions
 
