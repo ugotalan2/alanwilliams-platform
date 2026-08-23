@@ -341,31 +341,169 @@ Cloudflare:
 - Cloudflare Tunnel exposes services without inbound router ports
 - registrar remains name.com
 
-## Shared Frontend / App Launcher Direction
+## Shared Frontend / Platform Site Direction
 
-`alanwilliams.app` becomes the platform frontend.
+`alanwilliams.app` is the public front door and shared account surface
+for the ecosystem, but users are not required to visit it before using
+an individual app.
 
-Initial responsibilities:
+Public, signed-out Platform pages should include:
 
-- Clerk sign-in/account experience
-- authenticated landing page
-- app launcher
-- account/profile access
+-   home/about AlanWilliams Apps
+-   available app information
+-   about/contact
+-   sign in/sign up entry points
 
-Future app launcher experience:
+Authenticated Platform responsibilities include:
 
-```text
-AlanWilliams Apps
-- Agenda
-- Budget
-- Chores
-- Goals
-- Fitness
+-   Clerk sign-in/account experience
+-   canonical profile/account management
+-   Appearance
+-   My Apps / app launcher
+-   default post-login destination
+-   first-use and new-app discovery prompts
+
+Direct application entry remains a first-class flow. For example, a user
+invited to an Agenda organization may navigate directly to
+`agenda.alanwilliams.app`, sign in there, and use Agenda without first
+visiting the Platform launcher.
+
+## Shared Account / Profile Contract
+
+The same profile control is available from every AlanWilliams
+app/subdomain.
+
+Shared account destinations include:
+
+``` text
+My Profile
+Appearance
+My Apps
+Sign Out
 ```
 
-Access display may eventually be driven by app availability/authorization metadata, but that contract is not yet finalized.
+Platform owns these global account experiences. App-specific
+configuration continues to use the label `Settings`.
+
+Profile/account navigation must preserve the user's current application
+location. Shared account links carry a validated `returnTo` destination
+so a user can leave an app page, update profile/appearance/app
+preferences, and return to the same page.
+
+Return precedence:
+
+``` text
+1. valid explicit returnTo
+2. user's default app preference
+3. alanwilliams.app authenticated app launcher
+```
+
+`returnTo` must be restricted to approved AlanWilliams
+production/test/local origins. Arbitrary external redirect targets are
+not allowed.
+
+Authentication flows must preserve deep links in the same way:
+
+``` text
+direct app URL
+-> authentication required
+-> Clerk sign-in/sign-up
+-> return to original app URL
+```
+
+## App Catalog / Launcher Preferences
+
+Platform maintains application metadata and user launcher preferences.
+
+Conceptual application catalog:
+
+``` text
+platform_app
+- key
+- name
+- description
+- status
+- launched_at
+- icon
+- accent
+- sort_order
+```
+
+Conceptual user-app preference:
+
+``` text
+person_app
+- person_id
+- app_key
+- show_in_launcher
+- prompted_at
+- first_used_at
+- updated_at
+```
+
+`show_in_launcher` is a presentation preference only. It does not grant
+or revoke application authorization.
+
+Rule:
+
+> App access is owned by the app; app visibility in My Apps is owned by
+> the Platform user preference.
+
+A person may navigate directly to any app and authenticate there
+regardless of whether that app is shown in their launcher. Domain
+membership/authorization remains app-owned.
+
+First-use onboarding may ask which apps the user wants shown in My Apps
+and optionally choose a default destination.
+
+When a new app launches, an existing user who has not yet been presented
+with it may receive a lightweight one-time discovery prompt such as
+`Add to My Apps` / `Not now`. Declining does not block direct access.
+
+## Global Preferences
+
+Global account preferences belong to Platform rather than individual
+apps.
+
+Conceptual preference record:
+
+``` text
+person_preference
+- person_id
+- appearance_mode
+- default_app_key (nullable)
+- updated_at
+```
+
+Appearance values:
+
+``` text
+SYSTEM (default)
+LIGHT
+DARK
+```
+
+The default-app preference controls the normal destination after
+authentication when there is no explicit `returnTo`. The UI should offer
+the launcher as the default/fallback choice rather than assuming every
+user primarily uses Agenda.
+
+Changing global Appearance should affect all participating AlanWilliams
+apps.
 
 ## Shared UI Convention
+
+Frontend toolkit standard:
+
+-   React + TypeScript + Vite
+-   Bootstrap for responsive layout, utilities, forms, and component
+    mechanics
+-   Font Awesome for the shared icon vocabulary
+-   AlanWilliams semantic design tokens layered over Bootstrap for
+    product identity and theming
+
+The UI is mobile-first from the beginning. Screens should be designed
+and tested at phone widths first, then expanded for tablet/desktop.
 
 App identities:
 
@@ -378,28 +516,41 @@ Fitness      Red F
 Platform     Purple
 ```
 
+Shared layout, spacing, typography, controls, cards, profile behavior,
+and responsive patterns remain consistent. App identity is primarily
+differentiated by accent color, app icon/letter, and app-specific
+navigation/content.
+
+Use semantic tokens rather than hard-coded Bootstrap colors, for
+example:
+
+``` text
+--aw-surface
+--aw-surface-raised
+--aw-text
+--aw-text-muted
+--aw-border
+--aw-accent
+--aw-accent-hover
+--aw-focus-ring
+```
+
 Desktop:
 
-- top header
-- collapsible left sidebar where appropriate
+-   top header
+-   collapsible left sidebar where appropriate
+-   persistent access to app switcher and profile menu
 
 Mobile:
 
-- compact top header
-- bottom navigation where appropriate
+-   compact top header with profile access
+-   bottom navigation where appropriate
+-   touch-friendly controls and responsive Bootstrap layout
 
-General navigation guideline:
+General app navigation guideline:
 
 ```text
 Home + up to 3 primary destinations + More
-```
-
-Appearance:
-
-```text
-System (default)
-Light
-Dark
 ```
 
 ## Naming Conventions
@@ -444,7 +595,9 @@ API service prefixes stay app-focused:
 /budget
 ```
 
-Docker/server naming will be standardized in the next implementation step and then recorded here.
+Docker/server naming follows the platform-wide conventions above. Agenda
+test and production deployments have been migrated to the standardized
+`alanwilliams-agenda-*` Compose/container/network naming.
 
 ## Documentation Ownership
 
@@ -456,14 +609,31 @@ If a repo-specific document conflicts with this document on a cross-repo concern
 
 ## Current Locked Decisions
 
-- Clerk owns authentication.
-- Platform owns canonical Person.
-- One Person is shared across all connected apps.
-- App databases remain separate and own domain authorization/data.
-- Each Java backend validates Clerk JWTs locally.
-- Shared Clerk/Spring plumbing belongs in a reusable library, not a central auth microservice.
-- Platform backend is separately deployable as its own Docker image/container.
-- Repositories use the `alanwilliams-` prefix.
-- Documentation is split by repo with unique filenames.
-- One ChatGPT Project can hold the ecosystem docs so cross-repo context remains available.
-
+-   Clerk owns authentication.
+-   Platform owns canonical Person.
+-   One Person is shared across all connected apps.
+-   App databases remain separate and own domain authorization/data.
+-   Each Java backend validates Clerk JWTs locally.
+-   Shared Clerk/Spring plumbing belongs in a reusable library, not a
+    central auth microservice.
+-   Platform backend is separately deployable as its own Docker
+    image/container.
+-   Platform account/profile/Appearance/My Apps are globally available
+    from every participating app.
+-   Shared account/auth flows preserve a validated `returnTo`
+    destination so users return to the page they came from.
+-   Direct app entry does not require prior Platform launcher
+    enrollment.
+-   `person_app.show_in_launcher` is a presentation preference, not
+    authorization.
+-   App authorization remains app-owned even when launcher visibility is
+    Platform-owned.
+-   Global Appearance and default-app preferences are Platform-owned;
+    app-specific configuration is labeled `Settings`.
+-   Frontends use React/TypeScript/Vite with Bootstrap and Font Awesome
+    under shared AlanWilliams semantic design tokens.
+-   Shared UI is mobile-first.
+-   Repositories use the `alanwilliams-` prefix.
+-   Documentation is split by repo with unique filenames.
+-   One ChatGPT Project can hold the ecosystem docs so cross-repo
+    context remains available.

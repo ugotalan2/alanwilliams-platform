@@ -211,9 +211,17 @@ Cross-database person references are platform Person IDs by application contract
 
 ## Shared UI / Branding
 
-One responsive design language should connect the apps while allowing app-specific accent identity.
+One mobile-first responsive design language connects the apps while
+allowing app-specific accent identity.
 
-```text
+Shared frontend toolkit:
+
+-   React + TypeScript + Vite
+-   Bootstrap
+-   Font Awesome
+-   AlanWilliams semantic design tokens
+
+``` text
 Blue A   -> Agenda
 Green B  -> Budget
 Amber C  -> Chores
@@ -228,34 +236,75 @@ General header direction:
 [A] Agenda v                         [Profile] v
 ```
 
-The app identity opens the app switcher. Profile/account remains separate.
+The app identity opens the app switcher. The same profile/account
+control is available from every app/subdomain.
 
-Appearance direction:
+Global account destinations:
 
-```text
+``` text
+My Profile
+Appearance
+My Apps
+Sign Out
+```
+
+`Appearance` and app-launcher preferences are Platform-owned. The label
+`Settings` is reserved for app-specific configuration.
+
+Appearance:
+
+``` text
 System (default)
 Light
 Dark
 ```
 
-Shared UI should use semantic design tokens rather than hard-coded surface/text colors.
+Shared account/auth navigation preserves a validated `returnTo` URL so
+users return to the app page they came from after signing in or changing
+profile/preferences.
+
+Direct app entry is always supported. Showing an app in `My Apps` is
+only a launcher preference and does not control authorization.
+
+The Platform public site is an informational front door with
+Home/About/Apps/Contact and sign-in entry points; the root page is not
+merely a login screen.
+
+First-use onboarding may offer apps to add to `My Apps` and a default
+post-login destination. Newly launched apps may be presented later with
+a one-time opt-in discovery prompt.
+
+Shared UI should use semantic design tokens rather than hard-coded
+Bootstrap colors.
 
 ## Current Status
 
-Agenda is currently the production application and is running successfully in test and production on the self-hosted server.
+Agenda is currently the production application and is running
+successfully in test and production on the self-hosted server. Its
+repository, runner, Compose projects, containers, and web networks have
+been migrated to the standardized `alanwilliams-agenda-*` naming.
 
-Platform identity has now been defined architecturally but has not yet been implemented as its own repo/backend/database.
+Platform identity, shared account navigation, launcher preferences, and
+shared UI conventions are now defined architecturally but have not yet
+been implemented as the Platform frontend/backend/database.
 
 ## Near-Term Sequence
 
-1. Standardize existing Agenda repository, package, Docker, network, deployment, and server naming to the new `alanwilliams-*` convention.
-2. Create `alanwilliams-platform`.
-3. Create `alanwilliams-spring-security`.
-4. Implement Clerk shared authentication/JWT validation.
-5. Implement Platform canonical Person/account linkage.
-6. Integrate Agenda with Platform identity.
-7. Continue Agenda domain/schema migration.
-8. Bring Budget into the same platform/auth/identity model.
+1.  Scaffold `alanwilliams-platform` frontend/backend/deployment
+    structure.
+2.  Establish the mobile-first Bootstrap + Font Awesome shared visual
+    foundation and Platform-purple public/account shell.
+3.  Implement Clerk sign-in/sign-up with deep-link/`returnTo`
+    preservation.
+4.  Implement Platform profile, Appearance, My Apps, default-app
+    preference, and first-use app selection.
+5.  Create/consume `alanwilliams-spring-security` for shared Clerk JWT
+    validation.
+6.  Implement Platform canonical Person/account linkage.
+7.  Integrate Agenda with Platform identity and shared account/profile
+    navigation.
+8.  Continue Agenda domain/schema migration.
+9.  Bring Budget into the same platform/auth/identity/UI model.
 
 ## Explicitly Deferred
 
