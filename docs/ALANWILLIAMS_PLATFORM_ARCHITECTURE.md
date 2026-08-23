@@ -18,6 +18,26 @@ Detailed Agenda domain architecture belongs in `ALANWILLIAMS_AGENDA_ARCHITECTURE
 - Prevent account enumeration and cross-app privacy leaks.
 - Use stable cross-repo contracts and avoid duplicating detailed domain documentation between repositories.
 
+## Naming Conventions
+
+AlanWilliams Apps uses consistent naming across repositories,
+packages, deployments, containers, networks, databases, and server
+directories.
+
+| Resource                   | Convention                | Agenda Example                 |
+|----------------------------|---------------------------|--------------------------------|
+| GitHub repository          | `alanwilliams-<app>`      | `alanwilliams-agenda`          |
+| Java package               | `com.alanwilliams.<app>`  | `com.alanwilliams.agenda`      |
+| Maven artifact             | `<app>`                   | `agenda`                       |
+| API route prefix           | `/<app>`                  | `/agenda`                      |
+| Production database        | `<app>_prod`              | `agenda_prod`                  |
+| Test database              | `<app>_test`              | `agenda_test`                  |
+| Server directory           | `/opt/alanwilliams/<app>` | `/opt/alanwilliams/agenda`     |
+| Production Compose project | `alanwilliams-<app>-prod` | `alanwilliams-agenda-prod`     |
+| Test Compose project       | `alanwilliams-<app>-test` | `alanwilliams-agenda-test`     |
+| Web network                | `<compose-project>-web`   | `alanwilliams-agenda-prod-web` |
+| Shared backend network     | `alanwilliams-backend`    | `alanwilliams-backend`         |
+
 ## Repository Boundaries
 
 ### `alanwilliams-platform`
