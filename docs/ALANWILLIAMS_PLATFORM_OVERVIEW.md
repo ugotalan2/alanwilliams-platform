@@ -58,8 +58,9 @@ The target experience is:
 ``` text
 one Clerk login
 -> one canonical AlanWilliams Person
+-> one global profile / appearance preference
 -> multiple connected apps
--> app-specific memberships, permissions, settings, and data
+-> app/context-specific memberships, display names, permissions, settings, and data
 ```
 
 The platform landing page will initially provide sign-in/account
@@ -97,6 +98,52 @@ Core rules:
     identity can affect multiple apps.
 -   There is no globally searchable public AlanWilliams user directory.
 
+Current Platform profile direction:
+
+```text
+Person
+- canonical name
+- notification/contact email
+- global appearance mode: SYSTEM | LIGHT | DARK
+- Clerk user linkage
+- status / merge metadata
+```
+
+The notification email is Platform-owned and is where AlanWilliams Apps notifications are sent. Changing it does not change Clerk sign-in identity.
+
+### Context-Specific Display Names
+
+The Platform name is the default cross-app name.
+
+Apps may allow a more specific display name where a social/group context exists:
+
+```text
+Platform Person.name = Alan Williams
+
+Agenda / SCV Ward membership
+-> display_name = Bishop
+
+Agenda / Family Council membership
+-> display_name = Dad
+
+Finance / household membership
+-> display_name = Alan
+
+Chores / household membership
+-> display_name = Dad
+```
+
+Fallback rule:
+
+```text
+context-specific display_name
+-> if blank, Platform Person.name
+```
+
+Display-name overrides belong to the app membership/context that needs them, not to the Platform Person.
+
+Apps or contexts that do not need social names do not need a display-name field.
+
 ## Shared vs App-Specific Ownership
 
 Platform-owned concerns:
@@ -130,10 +177,13 @@ Current/planned naming:
 ``` text
 alanwilliams-platform
 alanwilliams-agenda
+alanwilliams-database
 alanwilliams-budget
 alanwilliams-chores
 alanwilliams-spring-security
 ```
+
+`alanwilliams-database` owns the shared PostgreSQL runtime and database-level operations. Individual app repositories still own their own databases and schema migrations.
 
 Repo names represent a deployable product or a clearly reusable platform
 component.
@@ -190,7 +240,8 @@ Shared infrastructure includes:
 
 -   PostgreSQL 17 in Docker
 -   Cloudflare DNS and Tunnel
--   Docker networks
+-   shared `alanwilliams-backend` Docker network
+-   per-app test/prod web networks
 -   GitHub Actions deployment
 -   physical-disk backups plus Google Drive off-site copies
 
@@ -210,25 +261,53 @@ integration belongs in `alanwilliams-spring-security`.
 The Platform backend then resolves authenticated Clerk identity to
 canonical Platform Person when needed.
 
-## Database Direction
+## Shared Database Runtime
 
-Introduce dedicated platform databases:
+The shared PostgreSQL runtime is now owned by:
 
-``` text
+```text
+alanwilliams-database
+```
+
+Production container:
+
+```text
+alanwilliams-postgres
+```
+
+Shared internal hostname:
+
+```text
+postgres:5432
+```
+
+Shared network:
+
+```text
+alanwilliams-backend
+```
+
+Current databases:
+
+```text
+agenda_prod
+agenda_test
 platform_prod
 platform_test
 ```
 
-App databases remain separate:
+Apps use dedicated per-environment database roles:
 
-``` text
-agenda_prod
-agenda_test
-budget_prod
-budget_test
-chores_prod
-chores_test
+```text
+agenda_prod     -> agenda_prod_app
+agenda_test     -> agenda_test_app
+platform_prod   -> platform_prod_app
+platform_test   -> platform_test_app
 ```
+
+`postgres_admin` is reserved for database administration, database creation, and backup/restore operations. Application backends must not run as `postgres_admin`.
+
+Each app owns its own Flyway migrations and schema. PostgreSQL cross-database foreign keys are not assumed.
 
 Cross-database person references are platform Person IDs by application
 contract rather than PostgreSQL foreign keys across separate databases.
@@ -245,43 +324,62 @@ Shared frontend toolkit:
 -   Font Awesome
 -   AlanWilliams semantic design tokens
 
-``` text
-Blue A   -> Agenda
-Green B  -> Budget
-Amber C  -> Chores
-Orange G -> Goals
-Red F    -> Fitness
-Purple   -> Platform / Account / Auth
+App identity colors:
+
+```text
+Platform  -> Navy
+Agenda    -> BYU Royal Blue
+Budget    -> Green
+Chores    -> Gold
+Fitness   -> Dark Red
 ```
+Global appearance:
 
-General header direction:
-
-``` text
-[A] Agenda v                         [Profile] v
-```
-
-The app identity opens the app switcher. The same profile/account
-control is available from every app/subdomain.
-
-Global account destinations:
-
-``` text
-My Profile
-Appearance
-My Apps
-Sign Out
-```
-
-`Appearance` and app-launcher preferences are Platform-owned. The label
-`Settings` is reserved for app-specific configuration.
-
-Appearance:
-
-``` text
+```text
 System (default)
 Light
 Dark
 ```
+
+Shared shell rules:
+
+- top header uses shared light/dark surface
+- header navigation hover/active uses the current app identity color
+- primary actions use the app identity color
+- secondary actions, generic links, tags, dropdowns, and page surfaces use shared light/dark tokens
+- desktop side nav and mobile bottom nav use app-primary backgrounds
+- inactive side/bottom nav foreground is soft white
+- active side/bottom nav item is white with app-primary icon/text
+- app icons use transparent backgrounds
+- Platform uses a navy W in light mode and a white W in dark mode
+
+Signed-out Platform header:
+
+```text
+Apps / About / Contact
+Appearance icon
+Sign In
+```
+
+Signed-in Platform header:
+
+```text
+Apps / About / Contact
+Profile icon
+```
+
+Appearance moves into the Profile dropdown when signed in. The Appearance submenu shows the current System/Light/Dark icon/value and closes only its nested submenu when a selection is made.
+
+Profile page direction:
+
+- canonical name
+- notification email
+- account security
+- name/email use lightweight edit icons
+- security uses an explicit Manage Security action
+- Clerk remains responsible for sign-in methods, passwords/passkeys, MFA, and sessions
+
+Mobile-first behavior has been tested on an actual phone as well as browser responsive mode.
 
 Shared account/auth navigation preserves a validated `returnTo` URL so
 users return to the app page they came from after signing in or changing
@@ -332,27 +430,84 @@ successfully in test and production on the self-hosted server. Its
 repository, runner, Compose projects, containers, and web networks have
 been migrated to the standardized `alanwilliams-agenda-*` naming.
 
-Platform identity, shared account navigation, launcher preferences, and
-shared UI conventions are now defined architecturally but have not yet
-been implemented as the Platform frontend/backend/database.
+The Platform repo now has:
 
+```text
+/frontend
+/backend
+```
+
+Platform is now deployed in both test and production:
+
+```text
+alanwilliams-platform-test-frontend-1
+alanwilliams-platform-test-backend-1
+
+alanwilliams-platform-prod-frontend-1
+alanwilliams-platform-prod-backend-1
+```
+
+Both backend containers attach to:
+
+```text
+their environment web network
++
+alanwilliams-backend
+```
+
+Cloudflared is attached to the Platform and Agenda test/prod web networks.
+
+## Shared Authentication Direction
+
+Clerk remains the shared identity and SSO provider.
+
+AlanWilliams Apps will not store passwords, password hashes, recovery credentials, or implement its own authorization server.
+
+Each Java backend will validate Clerk JWTs locally. Reusable Spring Security integration belongs in `alanwilliams-spring-security`.
+
+The next authentication work is:
+
+- add Clerk to Platform frontend
+- replace mock signed-in state with Clerk state
+- wire sign-in/sign-out
+- wire Clerk security/account management
+- link authenticated Clerk users to Platform Person
+- persist Platform profile and appearance settings
+- then integrate Agenda with the same identity contract
+
+Verified:
+
+- Agenda test and production deployments
+- Platform test and production frontend/backend deployments
+- shared PostgreSQL runtime under `alanwilliams-database`
+- dedicated Agenda and Platform test/prod databases
+- dedicated per-environment app database users
+- shared Docker backend network
+- Cloudflare connectivity for Agenda and Platform web networks
+- Platform responsive shell/profile UI
+- local Platform Docker development
+- Platform backend database connectivity
+- PostgreSQL admin credential rotation and app-role isolation
+
+Not yet implemented:
+
+- Clerk integration
+- persisted Platform Person/profile schema
+- automated deployment for the new Database/Platform deployment pattern
+- shared database backup automation for Platform
+- Agenda-to-Platform identity integration
+- 
 ## Near-Term Sequence
 
-1.  Scaffold `alanwilliams-platform` frontend/backend/deployment
-    structure.
-2.  Establish the mobile-first Bootstrap + Font Awesome shared visual
-    foundation and Platform-purple public/account shell.
-3.  Implement Clerk sign-in/sign-up with deep-link/`returnTo`
-    preservation.
-4.  Implement Platform profile, Appearance, My Apps, default-app
-    preference, and first-use app selection.
-5.  Create/consume `alanwilliams-spring-security` for shared Clerk JWT
-    validation.
-6.  Implement Platform canonical Person/account linkage.
-7.  Integrate Agenda with Platform identity and shared account/profile
-    navigation.
-8.  Continue Agenda domain/schema migration.
-9.  Bring Budget into the same platform/auth/identity/UI model.
+1. Automate `alanwilliams-database` deployment/operations and shared production backups.
+2. Automate Platform test/prod deployment.
+3. Add Clerk to Platform frontend.
+4. Implement shared Spring Security / Clerk JWT validation.
+5. Implement Platform Person/profile persistence and Clerk linkage.
+6. Persist global appearance preference and notification email.
+7. Integrate Agenda with Platform identity.
+8. Continue Agenda domain/schema migration.
+9. Bring Budget/Finance into the same Platform/auth/identity/database model.
 
 ## Explicitly Deferred
 
