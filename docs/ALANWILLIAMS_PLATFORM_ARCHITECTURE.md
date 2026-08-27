@@ -17,6 +17,7 @@ Detailed Agenda domain architecture belongs in `ALANWILLIAMS_AGENDA_ARCHITECTURE
 - Preserve historical identity and relationships rather than rewriting people when roles/memberships change.
 - Prevent account enumeration and cross-app privacy leaks.
 - Use stable cross-repo contracts and avoid duplicating detailed domain documentation between repositories.
+- - Keep shared infrastructure independently operable when it has a lifecycle distinct from an application.
 
 ## Technology Baseline
 
@@ -69,6 +70,7 @@ Java policy:
 -   PostgreSQL `17`
 -   Docker Engine
 -   Docker Compose
+-   Cloudflare DNS + Tunnel
 
 ### Versioning Policy
 
@@ -112,6 +114,8 @@ Owns:
 - canonical Person
 - Clerk user-to-Person linkage
 - global profile/account data
+- global appearance preference
+- notification/contact email
 - identity reconciliation and merge
 - platform/account API
 - `alanwilliams.app` launcher/account frontend
@@ -121,21 +125,22 @@ Owns:
 
 Owns:
 
-- Agenda domain
-- organizations and Agenda memberships
+- Agenda organizations and memberships
+- Agenda contextual display names
 - meeting types and meetings
 - questions, assignments, reminders, training/documents
 - Agenda-specific permissions and settings
 - Agenda frontend/backend deployment
+- Agenda database and Flyway migrations
 
 ### `alanwilliams-budget`
 
 Will own:
 
 - budget/workspace data
-- Budget membership and authorization
-- Budget-specific settings
-- Budget frontend/backend deployment
+- household memberships and contextual display names where applicable
+- Budget authorization/settings
+- Budget database/migrations/deployment
 
 ### `alanwilliams-database`
 
@@ -144,13 +149,18 @@ Owns the shared PostgreSQL runtime and database operations used by AlanWilliams 
 Owns:
 
 - PostgreSQL 17 container lifecycle
-- persistent PostgreSQL Docker volume
+- persistent PostgreSQL storage
 - shared `alanwilliams-backend` Docker network
-- database creation/listing operational tooling
+- database creation/listing tooling
 - logical backup/restore tooling
-- PostgreSQL runtime/version upgrades
+- PostgreSQL runtime/version maintenance
 
-It does not own application schemas or Flyway migrations.
+Does not own:
+
+- application schemas
+- Flyway migrations
+- app-specific JPA entities
+- application authorization/data rules
 
 Application repositories continue to own their own database, Flyway migrations, JPA/domain persistence mapping, and application-specific data retention behavior.
 
@@ -193,23 +203,26 @@ Clerk owns:
 
 - authentication
 - verified sign-in identity/session
+- password/passkey/MFA/social sign-in
 - account recovery
-- MFA/passkeys/social sign-in if enabled
+- active sessions
 
 Platform owns:
 
-- canonical Person record
-- linkage from Clerk user ID to Person
-- platform profile/contact data
+- canonical Person
+- Clerk user linkage
+- canonical/default name
+- notification/contact email
+- global appearance preference
 - duplicate reconciliation/merge
 
 Apps own:
 
-- app memberships
-- app permissions
-- app roles
-- app preferences
-- domain authorization
+- memberships
+- roles/permissions
+- contextual display names
+- domain-specific preferences
+- domain authorization/data
 
 ### Person Before Account
 
@@ -242,15 +255,39 @@ The final schema should be designed during implementation, but current conceptua
 person
 - id
 - name
-- contact_email (nullable)
+- notification_email (nullable)
+- appearance_mode (SYSTEM | LIGHT | DARK)
 - clerk_user_id (nullable, unique when present)
-- status (ACTIVE, INACTIVE, MERGED)
+- status (ACTIVE | INACTIVE | MERGED)
 - merged_into_person_id (nullable)
 - created_at
 - updated_at
 ```
 
-Exact naming may be refined during schema implementation.
+`SYSTEM` is the default appearance mode.
+
+The Platform notification email is independent from Clerk sign-in identity. It may initially be populated from Clerk but is independently editable afterward.
+
+### Contextual Display Names
+
+The Platform `person.name` is the default.
+
+Apps may define a nullable contextual display name on the relevant membership/relationship:
+
+```text
+Agenda organization membership.display_name
+Finance household membership.display_name
+Chores household membership.display_name
+```
+
+Resolution:
+
+```text
+context display_name
+-> if null/blank, Platform person.name
+```
+
+Do not put multi-context display-name overrides on Platform Person.
 
 ## Privacy / Discovery
 
@@ -263,7 +300,6 @@ The Platform backend may privately resolve an email to an existing Person for le
 ```text
 Invitation sent
 ```
-
 rather than account-existence signals.
 
 ## Person Merge / Reconciliation
@@ -322,6 +358,7 @@ api.alanwilliams.app
 Test examples:
 
 ```text
+test.alanwilliams.app
 agenda-test.alanwilliams.app
 api-test.alanwilliams.app
 ```
@@ -347,6 +384,24 @@ Examples:
 
 A dedicated router/reverse-proxy service can be introduced when multiple backends make it worthwhile. Do not introduce one solely to satisfy a microservice pattern.
 
+## Naming Conventions
+
+Repositories:
+
+```text
+alanwilliams-<component>
+```
+
+Examples:
+
+```text
+alanwilliams-platform
+alanwilliams-agenda
+alanwilliams-database
+alanwilliams-budget
+alanwilliams-spring-security
+```
+
 ## Deployment Model
 
 Apps and platform components are separately deployable Docker images/containers even when hosted on the same Ubuntu VM.
@@ -360,6 +415,8 @@ postgres
 cloudflared
 alanwilliams-platform-prod-backend
 alanwilliams-platform-prod-frontend
+alanwilliams-platform-test-backend
+alanwilliams-platform-test-frontend
 alanwilliams-agenda-prod-backend
 alanwilliams-agenda-prod-frontend
 alanwilliams-agenda-test-backend
@@ -371,67 +428,174 @@ Exact container names will be standardized during the next infrastructure/naming
 
 The separately deployable boundary is intentional so services can later be moved, replicated, or decomposed further without first untangling one monolithic deployment.
 
-## Database Ownership
+## Shared Database Architecture
 
-AlanWilliams Apps use one shared PostgreSQL runtime managed by `alanwilliams-database`, while each application owns a separate database.
-
-Conceptually:
+One shared PostgreSQL 17 runtime serves separate application databases.
 
 ```text
-alanwilliams-database
-`-- PostgreSQL 17
-    |-- platform_dev / platform_test / platform_prod
-    |-- agenda_dev / agenda_test / agenda_prod
-    |-- budget_dev / budget_test / budget_prod
-    `-- future app databases
+alanwilliams-postgres
+|
++-- agenda_prod
++-- agenda_test
++-- platform_prod
++-- platform_test
+`-- future app databases
 ```
 
-The shared runtime model does not make application data shared.
+The runtime is owned by `alanwilliams-database`.
 
-Ownership remains:
+Each app owns its own database schema and Flyway migrations.
+
+Cross-database foreign keys are not assumed.
+
+App records that reference Platform Person IDs do so by stable application contract.
+
+### Database Roles
+
+Administration:
 
 ```text
-Platform
--> platform_* databases
--> Platform Flyway migrations
-
-Agenda
--> agenda_* databases
--> Agenda Flyway migrations
-
-Budget
--> budget_* databases
--> Budget Flyway migrations
+postgres_admin
 ```
 
-PostgreSQL cross-database foreign keys are not assumed. App records that reference Platform Person IDs do so by stable application contract rather than database foreign keys into `platform_*`.
+Use only for:
 
-### Shared Database Runtime
+- database administration
+- database/user creation
+- backup/restore
+- controlled maintenance
 
-`alanwilliams-database` owns:
-
-- PostgreSQL container lifecycle
-- persistent PostgreSQL Docker volume
-- shared `alanwilliams-backend` Docker network
-- database creation/listing utilities
-- logical backup and restore utilities
-- PostgreSQL version/runtime maintenance
-
-Individual apps do not define their own PostgreSQL container.
-
-Applications attach backend containers to the externally managed `alanwilliams-backend` network and connect inside Docker using `postgres:5432`.
-
-Examples:
+App runtimes use dedicated least-privilege per-environment roles:
 
 ```text
-Platform backend
--> jdbc:postgresql://postgres:5432/platform_dev
-
-Agenda backend
--> jdbc:postgresql://postgres:5432/agenda_dev
+agenda_prod     -> agenda_prod_app
+agenda_test     -> agenda_test_app
+platform_prod   -> platform_prod_app
+platform_test   -> platform_test_app
 ```
 
-For host-side local tooling/tests, PostgreSQL is exposed on `localhost:5432`.
+Application backends must not use `postgres_admin`.
+
+Each app role owns/connects to its corresponding database and should not have access to the sibling environment database.
+
+### Local Database Runtime
+
+`alanwilliams-database` may be started independently:
+
+```text
+docker compose up -d
+```
+
+Apps then run independently against the shared DB runtime.
+
+Host-side tests/tools:
+
+```text
+localhost:5432
+```
+
+Docker app backends:
+
+```text
+postgres:5432
+```
+
+Running Platform does not require Agenda containers to be running and vice versa.
+
+### Production Database Runtime
+
+Current production shared container:
+
+```text
+alanwilliams-postgres
+```
+
+Persistent production data remains bind-mounted on the server while the operational Compose ownership now belongs to `/opt/alanwilliams/database`.
+
+The shared `alanwilliams-backend` network is external to app deployment stacks.
+
+### Backup / Restore
+
+Production backups are logical PostgreSQL backups using:
+
+```text
+pg_dump -Fc
+```
+
+Backup/restore tooling is owned operationally by `alanwilliams-database`.
+
+Backups target explicit databases and do not rely on copying container filesystem contents.
+
+The existing proven Agenda restore discipline remains the baseline as backup coverage expands to Platform.
+
+## Deployment Model
+
+Apps and Platform are independently deployable Docker frontend/backend pairs.
+
+Current deployed topology:
+
+```text
+alanwilliams-postgres
+
+alanwilliams-agenda-test-frontend-1
+alanwilliams-agenda-test-backend-1
+alanwilliams-agenda-prod-frontend-1
+alanwilliams-agenda-prod-backend-1
+
+alanwilliams-platform-test-frontend-1
+alanwilliams-platform-test-backend-1
+alanwilliams-platform-prod-frontend-1
+alanwilliams-platform-prod-backend-1
+
+cloudflared
+```
+
+Backend containers attach to:
+
+```text
+environment-specific web network
++
+alanwilliams-backend
+```
+
+Frontend containers attach only to their environment-specific web network.
+
+Cloudflared attaches to the app/platform web networks and does not need direct access to the shared backend database network.
+
+Current web networks:
+
+```text
+alanwilliams-agenda-test-web
+alanwilliams-agenda-prod-web
+alanwilliams-platform-test-web
+alanwilliams-platform-prod-web
+```
+
+## Shared Infrastructure
+
+```text
+Windows physical host
+-> VirtualBox Ubuntu VM
+-> Docker
+   -> alanwilliams-database / PostgreSQL
+   -> Agenda test/prod
+   -> Platform test/prod
+   -> cloudflared
+-> Cloudflare Tunnel
+-> public hostnames
+```
+
+Physical host:
+
+- Windows/Plex PC: `10.0.0.100`
+
+Ubuntu VM:
+
+- Ubuntu 26.04 LTS
+- `10.0.0.27`
+- Docker Engine
+
+Cloudflare Tunnel exposes services without inbound router ports.
 
 ### Local Development
 

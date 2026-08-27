@@ -1,0 +1,21 @@
+name: Deploy Test
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Build and deploy test
+        run: |
+          docker compose \
+            --env-file /opt/alanwilliams/platform/test/.env \
+            -f docker-compose.deploy.yml \
+            up -d --build
