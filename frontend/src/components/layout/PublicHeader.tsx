@@ -1,15 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faRightToBracket, faMoon, faSun, faDesktop, } from '@fortawesome/free-solid-svg-icons'
+import { faRightToBracket, } from '@fortawesome/free-solid-svg-icons'
 import alanWilliamsIcon from '../../styles/icons/alanwilliams-icon.png'
 import alanWilliamsIconDark from '../../styles/icons/alanwilliams-dark-icon.png'
-import { useTheme } from "../../theme/useTheme.ts";
+import AccountMenu from '../account/AccountMenu'
+import AppearanceMenu from "../account/AppearanceMenu.tsx";
 
 function PublicHeader() {
-    const {
-        preference,
-        setPreference,
-    } = useTheme()
+
+    const isSignedIn = true
 
     return (
         <nav className="navbar navbar-expand-md aw-navbar sticky-top">
@@ -47,7 +46,7 @@ function PublicHeader() {
                 </button>
 
                 <div className="collapse navbar-collapse" id="publicNavbar">
-                    <div className="navbar-nav ms-auto align-items-md-center gap-md-1">
+                    <div className="navbar-nav aw-mobile-nav-row ms-auto align-items-center">
                         <NavLink
                             to="/apps"
                             data-label="Apps"
@@ -78,77 +77,27 @@ function PublicHeader() {
                             Contact
                         </NavLink>
 
-                        <div className="dropdown ms-md-2">
-                            <button
-                                className="btn aw-btn-secondary dropdown-toggle"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                            >
-                                <FontAwesomeIcon
-                                    icon={
-                                        preference === 'light'
-                                            ? faSun
-                                            : preference === 'dark'
-                                                ? faMoon
-                                                : faDesktop
-                                    }
-                                />
-                            </button>
+                        {isSignedIn ? (
+                            <AccountMenu />
+                        ) : (
+                            <>
+                                <AppearanceMenu />
 
-                            <ul className="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => setPreference('system')}
-                                    >
-                                        <FontAwesomeIcon
-                                            icon={faDesktop}
-                                            className="me-2"
-                                        />
-                                        System
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => setPreference('light')}
-                                    >
-                                        <FontAwesomeIcon
-                                            icon={faSun}
-                                            className="me-2"
-                                        />
-                                        Light
-                                    </button>
-                                </li>
-
-                                <li>
-                                    <button
-                                        className="dropdown-item"
-                                        onClick={() => setPreference('dark')}
-                                    >
-                                        <FontAwesomeIcon
-                                            icon={faMoon}
-                                            className="me-2"
-                                        />
-                                        Dark
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <button
-                            type="button"
-                            className="btn aw-btn-accent ms-md-2 mt-2 mt-md-0"
-                            onClick={() => {
-                                // Clerk sign-in will replace this.
-                                console.log('Sign in')
-                            }}
-                        >
-                            <FontAwesomeIcon icon={faRightToBracket} className="me-2" />
-                            Sign In
-                        </button>
+                                <button
+                                    type="button"
+                                    className="btn aw-btn-accent aw-mobile-sign-in ms-md-2"
+                                    onClick={() => {
+                                        console.log('Sign in')
+                                    }}
+                                >
+                                    <FontAwesomeIcon
+                                        icon={faRightToBracket}
+                                        className="me-2"
+                                    />
+                                    Sign In
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

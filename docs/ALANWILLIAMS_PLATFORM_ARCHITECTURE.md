@@ -137,6 +137,25 @@ Will own:
 - Budget-specific settings
 - Budget frontend/backend deployment
 
+### `alanwilliams-database`
+
+Owns the shared PostgreSQL runtime and database operations used by AlanWilliams Apps.
+
+Owns:
+
+- PostgreSQL 17 container lifecycle
+- persistent PostgreSQL Docker volume
+- shared `alanwilliams-backend` Docker network
+- database creation/listing operational tooling
+- logical backup/restore tooling
+- PostgreSQL runtime/version upgrades
+
+It does not own application schemas or Flyway migrations.
+
+Application repositories continue to own their own database, Flyway migrations, JPA/domain persistence mapping, and application-specific data retention behavior.
+
+The shared PostgreSQL service is intentionally independent from Platform, Agenda, and other app deployments so an application can be started, stopped, or redeployed without owning the database runtime lifecycle.
+
 ### `alanwilliams-spring-security`
 
 Reusable Java library. It is not a deployed auth microservice.
@@ -332,6 +351,8 @@ A dedicated router/reverse-proxy service can be introduced when multiple backend
 
 Apps and platform components are separately deployable Docker images/containers even when hosted on the same Ubuntu VM.
 
+The PostgreSQL runtime is deployed separately through `alanwilliams-database` and is not owned by an individual application Compose stack.
+
 Target direction:
 
 ```text
@@ -352,30 +373,88 @@ The separately deployable boundary is intentional so services can later be moved
 
 ## Database Ownership
 
-Platform:
+AlanWilliams Apps use one shared PostgreSQL runtime managed by `alanwilliams-database`, while each application owns a separate database.
+
+Conceptually:
 
 ```text
-platform_prod
-platform_test
+alanwilliams-database
+`-- PostgreSQL 17
+    |-- platform_dev / platform_test / platform_prod
+    |-- agenda_dev / agenda_test / agenda_prod
+    |-- budget_dev / budget_test / budget_prod
+    `-- future app databases
 ```
 
-Agenda:
+The shared runtime model does not make application data shared.
+
+Ownership remains:
 
 ```text
-agenda_prod
-agenda_test
+Platform
+-> platform_* databases
+-> Platform Flyway migrations
+
+Agenda
+-> agenda_* databases
+-> Agenda Flyway migrations
+
+Budget
+-> budget_* databases
+-> Budget Flyway migrations
 ```
 
-Future Budget:
+PostgreSQL cross-database foreign keys are not assumed. App records that reference Platform Person IDs do so by stable application contract rather than database foreign keys into `platform_*`.
+
+### Shared Database Runtime
+
+`alanwilliams-database` owns:
+
+- PostgreSQL container lifecycle
+- persistent PostgreSQL Docker volume
+- shared `alanwilliams-backend` Docker network
+- database creation/listing utilities
+- logical backup and restore utilities
+- PostgreSQL version/runtime maintenance
+
+Individual apps do not define their own PostgreSQL container.
+
+Applications attach backend containers to the externally managed `alanwilliams-backend` network and connect inside Docker using `postgres:5432`.
+
+Examples:
 
 ```text
-budget_prod
-budget_test
+Platform backend
+-> jdbc:postgresql://postgres:5432/platform_dev
+
+Agenda backend
+-> jdbc:postgresql://postgres:5432/agenda_dev
 ```
 
-Each application owns its database. PostgreSQL cross-database foreign keys are not assumed.
+For host-side local tooling/tests, PostgreSQL is exposed on `localhost:5432`.
 
-App records that reference Platform Person IDs do so by stable contract.
+### Local Development
+
+The database runtime is started independently from application stacks:
+
+```text
+alanwilliams-database
+-> docker compose up -d
+```
+
+Then Platform, Agenda, or another app can be run independently against it. Running Platform locally does not require Agenda containers to be running, and running Agenda locally does not require Platform application containers solely to obtain PostgreSQL.
+
+### Database Creation
+
+Adding a new application does not require another PostgreSQL container. Create the application's database in the shared PostgreSQL instance, then allow that application repository to own all schema evolution through its Flyway migrations.
+
+### Backup / Restore Direction
+
+Production backups are logical PostgreSQL backups using `pg_dump -Fc`. Backup and restore operations belong operationally to `alanwilliams-database`, even though each application owns the contents and retention requirements of its own database.
+
+Backups target explicit application databases and do not rely on copying PostgreSQL container filesystem contents.
+
+The existing proven Agenda backup/restore discipline should be preserved as backup coverage expands to Platform and future production databases.
 
 ## Shared Infrastructure
 
@@ -695,6 +774,7 @@ Examples:
 alanwilliams-platform
 alanwilliams-agenda
 alanwilliams-budget
+alanwilliams-database
 alanwilliams-spring-security
 ```
 
@@ -736,6 +816,11 @@ Repo-specific architecture documents consume those contracts and should not dupl
 If a repo-specific document conflicts with this document on a cross-repo concern, update the documents together; the Platform architecture is the intended source of truth for that boundary.
 
 ## Current Locked Decisions
+- `alanwilliams-database` owns the shared PostgreSQL runtime, persistent volume, shared backend Docker network, and database-level backup/restore tooling.
+- Individual app repositories do not own separate PostgreSQL containers.
+- Each app still owns its own separate database and Flyway migrations.
+- App backend containers connect to shared PostgreSQL over the external `alanwilliams-backend` network using `postgres:5432`.
+- Local app stacks can run independently against the shared database runtime; running one app does not require running all other app containers.
 
 - Clerk owns authentication.
 - Platform owns canonical Person.

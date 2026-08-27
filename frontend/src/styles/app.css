@@ -74,6 +74,40 @@ body {
     font-weight: 700;
 }
 
+.aw-header-icon,
+.aw-account-menu-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text);
+
+    font-size: 1.5rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-header-icon:hover,
+.aw-header-icon:focus-visible,
+.aw-header-icon.show,
+.aw-account-menu-trigger:hover,
+.aw-account-menu-trigger:focus-visible,
+.aw-account-menu-trigger.show {
+    color: var(--aw-accent-highlight);
+}
+
+.aw-header-icon::after,
+.aw-account-menu-trigger::after {
+    display: none;
+}
+
 /* ------- Logo --------- */
 .aw-brand-logo-container {
     width: 3rem;
@@ -105,22 +139,6 @@ body {
 .aw-theme-preview-logo-container {
     width: 2.75rem;
     height: 2.75rem;
-}
-
-/*
- * Temporary fallback brand mark.
- * Remove once all screens use .aw-brand-logo.
- */
-.aw-brand-mark {
-    width: 2rem;
-    height: 2rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.625rem;
-    background: var(--aw-accent);
-    color: var(--aw-accent-foreground);
-    font-weight: 700;
 }
 
 /* ---------- Buttons ---------- */
@@ -255,6 +273,44 @@ body {
     color: var(--aw-text);
 }
 
+/* ---------- Account nested menu ---------- */
+
+.aw-account-submenu-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.aw-account-submenu-items {
+    padding: 0.25rem 0 0.25rem 1rem;
+}
+
+.aw-account-submenu-item {
+    display: flex;
+    align-items: center;
+
+    padding-left: 1rem;
+    font-size: 0.925rem;
+}
+
+.aw-submenu-chevron {
+    font-size: 0.75rem;
+
+    transition:
+            transform 150ms ease,
+            color 150ms ease;
+}
+
+.aw-submenu-chevron.open {
+    transform: rotate(90deg);
+}
+
+.aw-account-submenu-trigger:hover .aw-submenu-chevron,
+.aw-account-submenu-trigger:focus .aw-submenu-chevron {
+    color: var(--aw-accent-highlight);
+}
+
 /* ---------- Badges ---------- */
 
 .aw-badge {
@@ -330,6 +386,36 @@ body {
     .aw-hero .display-4 {
         font-size: 2.4rem;
     }
+}
+
+.aw-account-menu-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text);
+
+    font-size: 1.5rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-account-menu-trigger:hover,
+.aw-account-menu-trigger:focus-visible,
+.aw-account-menu-trigger.show {
+    background: transparent;
+    color: var(--aw-accent-highlight);
+}
+
+.aw-account-menu-trigger::after {
+    display: none;
 }
 
 /* =========================================================
@@ -683,5 +769,148 @@ body {
 
     .aw-theme-preview-content {
         padding: 1rem;
+    }
+}
+
+/* ---------- My Profile ---------- */
+
+.aw-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.aw-profile-info {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.aw-profile-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    color: var(--aw-text);
+}
+
+.aw-profile-action {
+    flex-shrink: 0;
+}
+
+/* ---------- My Profile mobile ---------- */
+
+@media (max-width: 575.98px) {
+    .aw-profile-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .aw-profile-info {
+        width: 100%;
+    }
+
+    .aw-profile-action {
+        width: 100%;
+    }
+
+    .aw-profile-editable-row {
+        position: relative;
+    }
+
+    .aw-profile-editable-row .aw-profile-info {
+        padding-right: 2.75rem;
+    }
+
+    .aw-profile-edit {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+}
+
+.aw-profile-edit {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text-muted);
+
+    font-size: 1rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-profile-edit:hover,
+.aw-profile-edit:focus-visible {
+    color: var(--aw-accent-highlight);
+}
+
+.aw-profile-editable-row {
+    position: relative;
+}
+
+/* ---------- Mobile header navigation ---------- */
+
+@media (max-width: 767.98px) {
+    .aw-navbar .navbar-collapse {
+        padding-top: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .aw-navbar .aw-mobile-nav-row {
+        width: 100%;
+
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-end;
+
+        gap: 0.5rem;
+    }
+
+    .aw-navbar .aw-mobile-nav-row .nav-link {
+        padding: 0.5rem 0.35rem;
+        white-space: nowrap;
+    }
+
+    .aw-navbar .aw-header-icon,
+    .aw-navbar .aw-account-menu-trigger {
+        flex-shrink: 0;
+    }
+
+    .aw-navbar .aw-btn-accent {
+        flex-shrink: 0;
+        white-space: nowrap;
+        margin: 0 !important;
+    }
+
+    .aw-navbar .dropdown {
+        position: relative;
+    }
+
+    .aw-navbar .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        left: auto;
+
+        margin: 0;
+        z-index: 1050;
     }
 }

@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import AppsPage from './pages/AppsPage'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
+import MyProfilePage from './pages/account/MyProfilePage'
 
 export const router = createBrowserRouter([
     {
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
             {
                 path: '/contact',
                 element: <ContactPage />,
+            },
+            {
+                path: '/account/profile',
+                element: <MyProfilePage />,
             },
         ],
     },
