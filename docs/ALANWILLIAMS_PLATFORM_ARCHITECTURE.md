@@ -2,31 +2,21 @@
 
 ## Scope
 
-This document is the source of truth for cross-repository architecture
-and integration contracts across AlanWilliams Apps.
+This document is the source of truth for cross-repository architecture and integration contracts across AlanWilliams Apps.
 
-Detailed Agenda domain architecture belongs in
-`ALANWILLIAMS_AGENDA_ARCHITECTURE.md`. Reusable Spring/Clerk
-implementation details belong in
-`ALANWILLIAMS_SPRING_SECURITY_ARCHITECTURE.md`.
+Detailed Agenda domain architecture belongs in `ALANWILLIAMS_AGENDA_ARCHITECTURE.md`. Reusable Spring/Clerk implementation details belong in `ALANWILLIAMS_SPRING_SECURITY_ARCHITECTURE.md`.
 
 ## Architecture Principles
 
--   Keep apps independently deployable while sharing platform
-    conventions, identity, authentication, UI patterns, and API routing.
--   Use Clerk for authentication/SSO; do not build or store password
-    credentials.
--   Maintain one canonical Platform Person across all connected apps.
--   Keep app-specific authorization and domain data within each app.
--   Prefer separately deployable components without prematurely
-    decomposing the system into many microservices.
--   Validate Clerk JWTs locally in each Java backend rather than routing
-    every request through a central auth service.
--   Preserve historical identity and relationships rather than rewriting
-    people when roles/memberships change.
--   Prevent account enumeration and cross-app privacy leaks.
--   Use stable cross-repo contracts and avoid duplicating detailed
-    domain documentation between repositories.
+- Keep apps independently deployable while sharing platform conventions, identity, authentication, UI patterns, and API routing.
+- Use Clerk for authentication/SSO; do not build or store password credentials.
+- Maintain one canonical Platform Person across all connected apps.
+- Keep app-specific authorization and domain data within each app.
+- Prefer separately deployable components without prematurely decomposing the system into many microservices.
+- Validate Clerk JWTs locally in each Java backend rather than routing every request through a central auth service.
+- Preserve historical identity and relationships rather than rewriting people when roles/memberships change.
+- Prevent account enumeration and cross-app privacy leaks.
+- Use stable cross-repo contracts and avoid duplicating detailed domain documentation between repositories.
 
 ## Technology Baseline
 
@@ -119,33 +109,52 @@ directories.
 
 Owns:
 
--   canonical Person
--   Clerk user-to-Person linkage
--   global profile/account data
--   identity reconciliation and merge
--   platform/account API
--   `alanwilliams.app` launcher/account frontend
--   cross-app identity/application metadata as needed
+- canonical Person
+- Clerk user-to-Person linkage
+- global profile/account data
+- identity reconciliation and merge
+- platform/account API
+- `alanwilliams.app` launcher/account frontend
+- cross-app identity/application metadata as needed
 
 ### `alanwilliams-agenda`
 
 Owns:
 
--   Agenda domain
--   organizations and Agenda memberships
--   meeting types and meetings
--   questions, assignments, reminders, training/documents
--   Agenda-specific permissions and settings
--   Agenda frontend/backend deployment
+- Agenda domain
+- organizations and Agenda memberships
+- meeting types and meetings
+- questions, assignments, reminders, training/documents
+- Agenda-specific permissions and settings
+- Agenda frontend/backend deployment
 
 ### `alanwilliams-budget`
 
 Will own:
 
--   budget/workspace data
--   Budget membership and authorization
--   Budget-specific settings
--   Budget frontend/backend deployment
+- budget/workspace data
+- Budget membership and authorization
+- Budget-specific settings
+- Budget frontend/backend deployment
+
+### `alanwilliams-database`
+
+Owns the shared PostgreSQL runtime and database operations used by AlanWilliams Apps.
+
+Owns:
+
+- PostgreSQL 17 container lifecycle
+- persistent PostgreSQL Docker volume
+- shared `alanwilliams-backend` Docker network
+- database creation/listing operational tooling
+- logical backup/restore tooling
+- PostgreSQL runtime/version upgrades
+
+It does not own application schemas or Flyway migrations.
+
+Application repositories continue to own their own database, Flyway migrations, JPA/domain persistence mapping, and application-specific data retention behavior.
+
+The shared PostgreSQL service is intentionally independent from Platform, Agenda, and other app deployments so an application can be started, stopped, or redeployed without owning the database runtime lifecycle.
 
 ### `alanwilliams-spring-security`
 
@@ -153,20 +162,19 @@ Reusable Java library. It is not a deployed auth microservice.
 
 Owns generic reusable Spring Security + Clerk integration such as:
 
--   JWT validation configuration
--   issuer/JWKS conventions
--   authenticated Clerk principal extraction
--   common 401/403 behavior where appropriate
--   security test helpers
+- JWT validation configuration
+- issuer/JWKS conventions
+- authenticated Clerk principal extraction
+- common 401/403 behavior where appropriate
+- security test helpers
 
-It does not own Person, Agenda authorization, Budget authorization, or
-any domain membership.
+It does not own Person, Agenda authorization, Budget authorization, or any domain membership.
 
 ## Canonical Identity Model
 
 The platform identity model is:
 
-``` text
+```text
 Clerk User
     |
     | verified authentication link
@@ -183,31 +191,31 @@ Platform Person
 
 Clerk owns:
 
--   authentication
--   verified sign-in identity/session
--   account recovery
--   MFA/passkeys/social sign-in if enabled
+- authentication
+- verified sign-in identity/session
+- account recovery
+- MFA/passkeys/social sign-in if enabled
 
 Platform owns:
 
--   canonical Person record
--   linkage from Clerk user ID to Person
--   platform profile/contact data
--   duplicate reconciliation/merge
+- canonical Person record
+- linkage from Clerk user ID to Person
+- platform profile/contact data
+- duplicate reconciliation/merge
 
 Apps own:
 
--   app memberships
--   app permissions
--   app roles
--   app preferences
--   domain authorization
+- app memberships
+- app permissions
+- app roles
+- app preferences
+- domain authorization
 
 ### Person Before Account
 
 A Platform Person may exist before signup:
 
-``` text
+```text
 person.id = 123
 person.name = "Jane Smith"
 person.clerk_user_id = null
@@ -215,25 +223,22 @@ person.clerk_user_id = null
 
 After a verified Clerk identity is claimed/linked:
 
-``` text
+```text
 person.id = 123
 person.clerk_user_id = "user_..."
 ```
 
 Rule:
 
-> Email discovers identity; Clerk user ID establishes authenticated
-> identity.
+> Email discovers identity; Clerk user ID establishes authenticated identity.
 
-Changing email must not create a new Person or rewrite historical
-relationships.
+Changing email must not create a new Person or rewrite historical relationships.
 
 ## Platform Person Suggested Shape
 
-The final schema should be designed during implementation, but current
-conceptual fields are:
+The final schema should be designed during implementation, but current conceptual fields are:
 
-``` text
+```text
 person
 - id
 - name
@@ -251,14 +256,11 @@ Exact naming may be refined during schema implementation.
 
 There is no globally searchable public AlanWilliams Apps directory.
 
-Entering an email must not reveal whether that address already has an
-AlanWilliams account.
+Entering an email must not reveal whether that address already has an AlanWilliams account.
 
-The Platform backend may privately resolve an email to an existing
-Person for legitimate invitation/claim workflows, but applications
-should return neutral UI outcomes such as:
+The Platform backend may privately resolve an email to an existing Person for legitimate invitation/claim workflows, but applications should return neutral UI outcomes such as:
 
-``` text
+```text
 Invitation sent
 ```
 
@@ -266,26 +268,23 @@ rather than account-existence signals.
 
 ## Person Merge / Reconciliation
 
-Merge is a platform identity operation because the Person can be
-referenced by multiple applications.
+Merge is a platform identity operation because the Person can be referenced by multiple applications.
 
 A merge must:
 
--   preserve the canonical target Person
--   retain the target Clerk user ID
--   mark the source as merged rather than hard-delete it
--   provide enough mapping/audit information for app relationships to be
-    repointed safely
--   avoid silently merging based only on name
+- preserve the canonical target Person
+- retain the target Clerk user ID
+- mark the source as merged rather than hard-delete it
+- provide enough mapping/audit information for app relationships to be repointed safely
+- avoid silently merging based only on name
 
-Exact distributed merge coordination will be designed before
-implementation because app databases are separate.
+Exact distributed merge coordination will be designed before implementation because app databases are separate.
 
 ## Authentication Request Flow
 
 Each Java backend validates Clerk JWTs locally:
 
-``` text
+```text
 Browser / React app
 -> Clerk session/token
 -> Authorization: Bearer <token>
@@ -299,15 +298,13 @@ The Platform backend is not an inline auth gateway.
 
 Do not require:
 
-``` text
+```text
 Agenda request -> Platform auth request -> Clerk -> Agenda
 ```
 
 for every API call.
 
-When an app needs canonical Person resolution, it uses the Platform
-identity contract rather than re-implementing independent Person
-creation.
+When an app needs canonical Person resolution, it uses the Platform identity contract rather than re-implementing independent Person creation.
 
 ## Environment Isolation
 
@@ -315,7 +312,7 @@ Use separate Clerk test and production configurations.
 
 Production:
 
-``` text
+```text
 alanwilliams.app
 agenda.alanwilliams.app
 budget.alanwilliams.app
@@ -324,43 +321,41 @@ api.alanwilliams.app
 
 Test examples:
 
-``` text
+```text
 agenda-test.alanwilliams.app
 api-test.alanwilliams.app
 ```
 
-Only intended sibling domains should participate in shared
-authentication.
+Only intended sibling domains should participate in shared authentication.
 
 ## API Convention
 
 Use one API hostname per environment with service path prefixes:
 
-``` text
+```text
 Production: https://api.alanwilliams.app/<service>/...
 Test:       https://api-test.alanwilliams.app/<service>/...
 ```
 
 Examples:
 
-``` text
+```text
 /platform/...
 /agenda/...
 /budget/...
 ```
 
-A dedicated router/reverse-proxy service can be introduced when multiple
-backends make it worthwhile. Do not introduce one solely to satisfy a
-microservice pattern.
+A dedicated router/reverse-proxy service can be introduced when multiple backends make it worthwhile. Do not introduce one solely to satisfy a microservice pattern.
 
 ## Deployment Model
 
-Apps and platform components are separately deployable Docker
-images/containers even when hosted on the same Ubuntu VM.
+Apps and platform components are separately deployable Docker images/containers even when hosted on the same Ubuntu VM.
+
+The PostgreSQL runtime is deployed separately through `alanwilliams-database` and is not owned by an individual application Compose stack.
 
 Target direction:
 
-``` text
+```text
 postgres
 cloudflared
 alanwilliams-platform-prod-backend
@@ -372,46 +367,100 @@ alanwilliams-agenda-test-frontend
 ...future apps
 ```
 
-Exact container names will be standardized during the next
-infrastructure/naming pass.
+Exact container names will be standardized during the next infrastructure/naming pass.
 
-The separately deployable boundary is intentional so services can later
-be moved, replicated, or decomposed further without first untangling one
-monolithic deployment.
+The separately deployable boundary is intentional so services can later be moved, replicated, or decomposed further without first untangling one monolithic deployment.
 
 ## Database Ownership
 
-Platform:
+AlanWilliams Apps use one shared PostgreSQL runtime managed by `alanwilliams-database`, while each application owns a separate database.
 
-``` text
-platform_prod
-platform_test
+Conceptually:
+
+```text
+alanwilliams-database
+`-- PostgreSQL 17
+    |-- platform_dev / platform_test / platform_prod
+    |-- agenda_dev / agenda_test / agenda_prod
+    |-- budget_dev / budget_test / budget_prod
+    `-- future app databases
 ```
 
-Agenda:
+The shared runtime model does not make application data shared.
 
-``` text
-agenda_prod
-agenda_test
+Ownership remains:
+
+```text
+Platform
+-> platform_* databases
+-> Platform Flyway migrations
+
+Agenda
+-> agenda_* databases
+-> Agenda Flyway migrations
+
+Budget
+-> budget_* databases
+-> Budget Flyway migrations
 ```
 
-Future Budget:
+PostgreSQL cross-database foreign keys are not assumed. App records that reference Platform Person IDs do so by stable application contract rather than database foreign keys into `platform_*`.
 
-``` text
-budget_prod
-budget_test
+### Shared Database Runtime
+
+`alanwilliams-database` owns:
+
+- PostgreSQL container lifecycle
+- persistent PostgreSQL Docker volume
+- shared `alanwilliams-backend` Docker network
+- database creation/listing utilities
+- logical backup and restore utilities
+- PostgreSQL version/runtime maintenance
+
+Individual apps do not define their own PostgreSQL container.
+
+Applications attach backend containers to the externally managed `alanwilliams-backend` network and connect inside Docker using `postgres:5432`.
+
+Examples:
+
+```text
+Platform backend
+-> jdbc:postgresql://postgres:5432/platform_dev
+
+Agenda backend
+-> jdbc:postgresql://postgres:5432/agenda_dev
 ```
 
-Each application owns its database. PostgreSQL cross-database foreign
-keys are not assumed.
+For host-side local tooling/tests, PostgreSQL is exposed on `localhost:5432`.
 
-App records that reference Platform Person IDs do so by stable contract.
+### Local Development
+
+The database runtime is started independently from application stacks:
+
+```text
+alanwilliams-database
+-> docker compose up -d
+```
+
+Then Platform, Agenda, or another app can be run independently against it. Running Platform locally does not require Agenda containers to be running, and running Agenda locally does not require Platform application containers solely to obtain PostgreSQL.
+
+### Database Creation
+
+Adding a new application does not require another PostgreSQL container. Create the application's database in the shared PostgreSQL instance, then allow that application repository to own all schema evolution through its Flyway migrations.
+
+### Backup / Restore Direction
+
+Production backups are logical PostgreSQL backups using `pg_dump -Fc`. Backup and restore operations belong operationally to `alanwilliams-database`, even though each application owns the contents and retention requirements of its own database.
+
+Backups target explicit application databases and do not rely on copying PostgreSQL container filesystem contents.
+
+The existing proven Agenda backup/restore discipline should be preserved as backup coverage expands to Platform and future production databases.
 
 ## Shared Infrastructure
 
 Current infrastructure:
 
-``` text
+```text
 Windows physical host
 -> VirtualBox Ubuntu VM
 -> Docker
@@ -422,252 +471,316 @@ Windows physical host
 
 Physical host:
 
--   Windows/Plex PC: `10.0.0.100`
+- Windows/Plex PC: `10.0.0.100`
 
 Ubuntu VM:
 
--   Ubuntu 26.04 LTS
--   `10.0.0.27`
--   Docker Engine
+- Ubuntu 26.04 LTS
+- `10.0.0.27`
+- Docker Engine
 
 Cloudflare:
 
--   DNS managed by Cloudflare
--   Cloudflare Tunnel exposes services without inbound router ports
--   registrar remains name.com
+- DNS managed by Cloudflare
+- Cloudflare Tunnel exposes services without inbound router ports
+- registrar remains name.com
 
-## Shared Frontend / Platform Site Direction
+## Shared Frontend / App Launcher Direction
 
-`alanwilliams.app` is the public front door and shared account surface
-for the ecosystem, but users are not required to visit it before using
-an individual app.
+`alanwilliams.app` becomes the platform frontend.
 
-Public, signed-out Platform pages should include:
+Initial responsibilities:
 
--   home/about AlanWilliams Apps
--   available app information
--   about/contact
--   sign in/sign up entry points
+- Clerk sign-in/account experience
+- authenticated landing page
+- app launcher
+- account/profile access
 
-Authenticated Platform responsibilities include:
+Future app launcher experience:
 
--   Clerk sign-in/account experience
--   canonical profile/account management
--   Appearance
--   My Apps / app launcher
--   default post-login destination
--   first-use and new-app discovery prompts
-
-Direct application entry remains a first-class flow. For example, a user
-invited to an Agenda organization may navigate directly to
-`agenda.alanwilliams.app`, sign in there, and use Agenda without first
-visiting the Platform launcher.
-
-## Shared Account / Profile Contract
-
-The same profile control is available from every AlanWilliams
-app/subdomain.
-
-Shared account destinations include:
-
-``` text
-My Profile
-Appearance
-My Apps
-Sign Out
+```text
+AlanWilliams Apps
+- Agenda
+- Budget
+- Chores
+- Goals
+- Fitness
 ```
 
-Platform owns these global account experiences. App-specific
-configuration continues to use the label `Settings`.
-
-Profile/account navigation must preserve the user's current application
-location. Shared account links carry a validated `returnTo` destination
-so a user can leave an app page, update profile/appearance/app
-preferences, and return to the same page.
-
-Return precedence:
-
-``` text
-1. valid explicit returnTo
-2. user's default app preference
-3. alanwilliams.app authenticated app launcher
-```
-
-`returnTo` must be restricted to approved AlanWilliams
-production/test/local origins. Arbitrary external redirect targets are
-not allowed.
-
-Authentication flows must preserve deep links in the same way:
-
-``` text
-direct app URL
--> authentication required
--> Clerk sign-in/sign-up
--> return to original app URL
-```
-
-## App Catalog / Launcher Preferences
-
-Platform maintains application metadata and user launcher preferences.
-
-Conceptual application catalog:
-
-``` text
-platform_app
-- key
-- name
-- description
-- status
-- launched_at
-- icon
-- accent
-- sort_order
-```
-
-Conceptual user-app preference:
-
-``` text
-person_app
-- person_id
-- app_key
-- show_in_launcher
-- prompted_at
-- first_used_at
-- updated_at
-```
-
-`show_in_launcher` is a presentation preference only. It does not grant
-or revoke application authorization.
-
-Rule:
-
-> App access is owned by the app; app visibility in My Apps is owned by
-> the Platform user preference.
-
-A person may navigate directly to any app and authenticate there
-regardless of whether that app is shown in their launcher. Domain
-membership/authorization remains app-owned.
-
-First-use onboarding may ask which apps the user wants shown in My Apps
-and optionally choose a default destination.
-
-When a new app launches, an existing user who has not yet been presented
-with it may receive a lightweight one-time discovery prompt such as
-`Add to My Apps` / `Not now`. Declining does not block direct access.
-
-## Global Preferences
-
-Global account preferences belong to Platform rather than individual
-apps.
-
-Conceptual preference record:
-
-``` text
-person_preference
-- person_id
-- appearance_mode
-- default_app_key (nullable)
-- updated_at
-```
-
-Appearance values:
-
-``` text
-SYSTEM (default)
-LIGHT
-DARK
-```
-
-The default-app preference controls the normal destination after
-authentication when there is no explicit `returnTo`. The UI should offer
-the launcher as the default/fallback choice rather than assuming every
-user primarily uses Agenda.
-
-Changing global Appearance should affect all participating AlanWilliams
-apps.
+Access display may eventually be driven by app availability/authorization metadata, but that contract is not yet finalized.
 
 ## Shared UI Convention
 
-Frontend toolkit standard:
+AlanWilliams Apps use one shared responsive visual system with app-specific identity applied selectively.
 
--   React + TypeScript + Vite
--   Bootstrap for responsive layout, utilities, forms, and component
-    mechanics
--   Font Awesome for the shared icon vocabulary
--   AlanWilliams semantic design tokens layered over Bootstrap for
-    product identity and theming
+### Frontend Toolkit
 
-The UI is mobile-first from the beginning. Screens should be designed
-and tested at phone widths first, then expanded for tablet/desktop.
+Shared frontend standard:
 
-App identities:
+- React + TypeScript + Vite
+- Bootstrap for responsive layout, utilities, forms, and component mechanics
+- Font Awesome for the shared icon vocabulary
+- AlanWilliams semantic design tokens layered over Bootstrap
+- mobile-first implementation and testing
 
-``` text
-Agenda       Blue A
-Budget       Green B
-Chores       Amber/Yellow C
-Goals        Orange G
-Fitness      Red F
-Platform     Purple
+### App Identity Colors
+
+Current app identity direction:
+
+```text
+Platform     Navy
+Agenda       BYU Royal Blue
+Budget       Green
+Chores       Gold
+Fitness      Dark Red
 ```
 
-Shared layout, spacing, typography, controls, cards, profile behavior,
-and responsive patterns remain consistent. App identity is primarily
-differentiated by accent color, app icon/letter, and app-specific
-navigation/content.
+Each app defines one primary identity color:
 
-Use semantic tokens rather than hard-coded Bootstrap colors, for
-example:
+```text
+--app-primary
+```
 
-``` text
+The app primary color is intentionally limited to a small portion of the interface so pages remain visually calm and consistent.
+
+Use the app primary color for:
+
+- app logo/icon
+- primary actions
+- top-header navigation hover/active text
+- desktop side-navigation background
+- mobile bottom-navigation background
+
+Do not use the app primary color for generic links, tags, dropdowns, or secondary actions.
+
+### Shared Header
+
+The top header uses the shared light/dark system surface rather than an app-colored background.
+
+Header behavior:
+
+```text
+background         -> shared light/dark surface
+normal text        -> shared text color
+hover nav text     -> app primary color
+active nav text    -> app primary color + bold
+primary/sign-in    -> app primary button treatment
+```
+
+Navigation item width should reserve space for its bold state so hover/active changes do not shift adjacent items.
+
+When signed out, the left brand area behaves as a normal home link.
+
+When signed in, the same app identity area may become the app switcher.
+
+### Desktop Side Navigation
+
+Desktop app navigation uses the app primary color as the side-navigation surface.
+
+```text
+background         -> app primary
+inactive icon/text -> soft white
+hover              -> white foreground + subtle white wash
+active             -> white surface + app-primary icon/text
+```
+
+The side navigation remains fixed/sticky while the page content area scrolls.
+
+### Mobile Bottom Navigation
+
+Mobile app navigation uses the same app-primary treatment as desktop side navigation.
+
+```text
+background         -> app primary
+inactive icon/text -> soft white
+hover              -> white foreground + subtle white wash
+active             -> white surface + app-primary icon/text
+```
+
+The mobile bottom navigation remains pinned to the bottom of the app shell while page content scrolls.
+
+General mobile navigation guideline:
+
+```text
+Home + up to 3 primary destinations + More
+```
+
+### App Logo Treatment
+
+App logos use their native app identity color without a background container.
+
+Light mode:
+
+```text
+native app-color logo
+transparent background
+```
+
+Dark mode:
+
+```text
+same native app-color logo
+transparent background
+```
+
+Separate light/dark app-logo variants are not required.
+
+Platform is the exception because the navy `W` does not have sufficient contrast on the selected dark-mode surface:
+
+```text
+Platform light mode -> navy W asset
+Platform dark mode  -> white W asset
+```
+
+Use explicit light/dark Platform logo assets rather than CSS color inversion.
+
+### Appearance
+
+Global appearance choices:
+
+```text
+System (default)
+Light
+Dark
+```
+
+The shared dark theme uses a navy/blue-toned surface family rather than charcoal/black because it provides better contrast and visual compatibility with the BYU Royal Agenda identity.
+
+Exact surface values remain design tokens and may evolve without changing the overall contract.
+
+### Primary Actions
+
+Primary actions use the current app's identity color.
+
+Light mode:
+
+```text
+normal -> app-primary fill + white text
+hover  -> white fill + app-primary border/text
+```
+
+Dark mode:
+
+```text
+normal -> app-primary fill + white text
+hover  -> white fill + app-primary text
+```
+
+### Secondary Actions
+
+Secondary actions use shared AlanWilliams light/dark tokens rather than the app identity color.
+
+They remain visually distinct from primary actions and should always have a visible border at rest.
+
+Neutral actions such as Cancel, Close, and Back may remain neutral/gray when appropriate.
+
+### Links
+
+Generic links use a shared accessible blue treatment rather than the current app identity color.
+
+This prevents ordinary links from becoming visually aggressive in apps whose primary identity is red, gold, or green.
+
+Links use separate light/dark shared tokens:
+
+```text
+--aw-link
+--aw-link-hover
+```
+
+### Tags / Pills
+
+User-defined or ordinary organizational tags use one shared neutral light/dark pill treatment.
+
+Do not allow users to assign arbitrary tag colors.
+
+Conceptual shared tag tokens:
+
+```text
+--aw-tag-text
+--aw-tag-bg
+--aw-tag-border
+```
+
+Tags communicate categorization by text, not by custom color.
+
+### Semantic Badges
+
+Controlled semantic states may use dedicated system-defined colors independent of app identity.
+
+Examples:
+
+```text
+URGENT
+HIGH
+MEDIUM
+LOW
+
+SUCCESS
+WARNING
+ERROR
+PENDING
+COMPLETED
+```
+
+Semantic color palettes must be designed for both light and dark mode and should not be derived from the app primary color.
+
+### Dropdowns
+
+Dropdown surfaces, text, borders, and selection behavior use shared light/dark tokens.
+
+Dropdowns do not inherit app-specific background colors.
+
+### Shared Semantic Tokens
+
+Shared UI should prefer semantic variables such as:
+
+```text
 --aw-surface
 --aw-surface-raised
 --aw-text
 --aw-text-muted
 --aw-border
---aw-accent
---aw-accent-hover
---aw-focus-ring
+
+--aw-secondary-action
+--aw-secondary-action-hover
+
+--aw-link
+--aw-link-hover
+
+--aw-tag-text
+--aw-tag-bg
+--aw-tag-border
 ```
 
-Desktop:
+App identity is injected separately through:
 
--   top header
--   collapsible left sidebar where appropriate
--   persistent access to app switcher and profile menu
-
-Mobile:
-
--   compact top header with profile access
--   bottom navigation where appropriate
--   touch-friendly controls and responsive Bootstrap layout
-
-General app navigation guideline:
-
-``` text
-Home + up to 3 primary destinations + More
+```text
+--app-primary
 ```
+
+This separation keeps shared components consistent while allowing app identity to remain obvious through logos, navigation surfaces, and primary actions.
 
 ## Naming Conventions
 
 Repository:
 
-``` text
+```text
 alanwilliams-<component>
 ```
 
 Examples:
 
-``` text
+```text
 alanwilliams-platform
 alanwilliams-agenda
 alanwilliams-budget
+alanwilliams-database
 alanwilliams-spring-security
 ```
 
 Java package direction:
 
-``` text
+```text
 com.alanwilliams.platform
 com.alanwilliams.agenda
 com.alanwilliams.budget
@@ -676,7 +789,7 @@ com.alanwilliams.security
 
 Database names stay app-focused:
 
-``` text
+```text
 platform_prod
 agenda_prod
 budget_prod
@@ -684,7 +797,7 @@ budget_prod
 
 API service prefixes stay app-focused:
 
-``` text
+```text
 /platform
 /agenda
 /budget
@@ -698,40 +811,32 @@ test and production deployments have been migrated to the standardized
 
 Cross-repo contracts are documented here.
 
-Repo-specific architecture documents consume those contracts and should
-not duplicate them in full.
+Repo-specific architecture documents consume those contracts and should not duplicate them in full.
 
-If a repo-specific document conflicts with this document on a cross-repo
-concern, update the documents together; the Platform architecture is the
-intended source of truth for that boundary.
+If a repo-specific document conflicts with this document on a cross-repo concern, update the documents together; the Platform architecture is the intended source of truth for that boundary.
 
 ## Current Locked Decisions
+- `alanwilliams-database` owns the shared PostgreSQL runtime, persistent volume, shared backend Docker network, and database-level backup/restore tooling.
+- Individual app repositories do not own separate PostgreSQL containers.
+- Each app still owns its own separate database and Flyway migrations.
+- App backend containers connect to shared PostgreSQL over the external `alanwilliams-backend` network using `postgres:5432`.
+- Local app stacks can run independently against the shared database runtime; running one app does not require running all other app containers.
 
--   Clerk owns authentication.
--   Platform owns canonical Person.
--   One Person is shared across all connected apps.
--   App databases remain separate and own domain authorization/data.
--   Each Java backend validates Clerk JWTs locally.
--   Shared Clerk/Spring plumbing belongs in a reusable library, not a
-    central auth microservice.
--   Platform backend is separately deployable as its own Docker
-    image/container.
--   Platform account/profile/Appearance/My Apps are globally available
-    from every participating app.
--   Shared account/auth flows preserve a validated `returnTo`
-    destination so users return to the page they came from.
--   Direct app entry does not require prior Platform launcher
-    enrollment.
--   `person_app.show_in_launcher` is a presentation preference, not
-    authorization.
--   App authorization remains app-owned even when launcher visibility is
-    Platform-owned.
--   Global Appearance and default-app preferences are Platform-owned;
-    app-specific configuration is labeled `Settings`.
--   Frontends use React/TypeScript/Vite with Bootstrap and Font Awesome
-    under shared AlanWilliams semantic design tokens.
--   Shared UI is mobile-first.
--   Repositories use the `alanwilliams-` prefix.
--   Documentation is split by repo with unique filenames.
--   One ChatGPT Project can hold the ecosystem docs so cross-repo
-    context remains available.
+- Clerk owns authentication.
+- Platform owns canonical Person.
+- One Person is shared across all connected apps.
+- App databases remain separate and own domain authorization/data.
+- Each Java backend validates Clerk JWTs locally.
+- Shared Clerk/Spring plumbing belongs in a reusable library, not a central auth microservice.
+- Platform backend is separately deployable as its own Docker image/container.
+- Shared top headers use light/dark system surfaces; app identity appears in hover/active text and primary actions.
+- Desktop side navigation and mobile bottom navigation use the current app primary color with white foreground and white active-item surfaces.
+- App logos use native app colors on transparent backgrounds in both light and dark mode.
+- Platform uses a navy W in light mode and a white W in dark mode.
+- Shared secondary actions, generic links, tags, dropdowns, and page surfaces are not app-themed.
+- Generic links use shared accessible blue tokens; tags use shared neutral pills without user-configurable colors.
+- Semantic badges/priorities use controlled system colors independent of app identity.
+- Repositories use the `alanwilliams-` prefix.
+- Documentation is split by repo with unique filenames.
+- One ChatGPT Project can hold the ecosystem docs so cross-repo context remains available.
+

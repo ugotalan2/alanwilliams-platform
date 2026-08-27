@@ -1,0 +1,916 @@
+html,
+body,
+#root {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family:
+            Inter,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+    background: var(--aw-surface);
+    color: var(--aw-text);
+    transition:
+            background-color 150ms ease,
+            color 150ms ease;
+}
+
+/* ---------- Shared text ---------- */
+
+.aw-text-muted {
+    color: var(--aw-text-muted);
+}
+
+/* ---------- Header / navigation ---------- */
+
+.aw-navbar {
+    background: color-mix(
+            in srgb,
+            var(--aw-surface) 94%,
+            transparent
+    );
+    border-bottom: 1px solid var(--aw-border);
+    backdrop-filter: blur(12px);
+}
+
+.aw-navbar .navbar-brand,
+.aw-navbar .nav-link {
+    color: var(--aw-text);
+    transition:
+        color 150ms ease,
+        opacity 150ms ease;
+}
+
+.aw-navbar .nav-link {
+    display: inline-grid;
+    justify-items: center;
+    color: var(--aw-text);
+    font-weight: 400;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    transition: color 150ms ease;
+}
+
+.aw-navbar .nav-link::after {
+    content: attr(data-label);
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 700;
+}
+
+.aw-navbar .nav-link:hover {
+    color: var(--aw-accent-highlight);
+    font-weight: 600;
+}
+
+.aw-navbar .nav-link.active {
+    color: var(--aw-accent-highlight);
+    font-weight: 700;
+}
+
+.aw-header-icon,
+.aw-account-menu-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text);
+
+    font-size: 1.5rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-header-icon:hover,
+.aw-header-icon:focus-visible,
+.aw-header-icon.show,
+.aw-account-menu-trigger:hover,
+.aw-account-menu-trigger:focus-visible,
+.aw-account-menu-trigger.show {
+    color: var(--aw-accent-highlight);
+}
+
+.aw-header-icon::after,
+.aw-account-menu-trigger::after {
+    display: none;
+}
+
+/* ------- Logo --------- */
+.aw-brand-logo-container {
+    width: 3rem;
+    height: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.aw-brand-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.aw-brand-logo-dark {
+    display: none;
+}
+
+[data-aw-theme='dark'] .aw-brand-logo-light {
+    display: none;
+}
+
+[data-aw-theme='dark'] .aw-brand-logo-dark {
+    display: block;
+}
+
+.aw-theme-preview-logo-container {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+/* ---------- Buttons ---------- */
+
+.aw-btn-accent {
+    background: var(--aw-accent);
+    border: 2px solid var(--aw-accent);
+    color: var(--aw-accent-foreground);
+    transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            color 150ms ease;
+}
+
+.aw-btn-accent:hover,
+.aw-btn-accent:focus-visible {
+    background: #ffffff;
+    border-color: var(--aw-accent);
+    color: var(--aw-accent);
+}
+
+[data-aw-theme='dark'] .aw-btn-accent {
+    background: var(--aw-accent);
+    border-color: var(--aw-accent);
+    color: #ffffff;
+}
+
+[data-aw-theme='dark'] .aw-btn-accent:hover,
+[data-aw-theme='dark'] .aw-btn-accent:focus-visible {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: var(--aw-royal);
+}
+
+.aw-btn-secondary,
+.aw-btn-secondary:visited {
+    background-color: transparent;
+    border: 2px solid var(--aw-secondary-action);
+    color: var(--aw-secondary-action);
+}
+
+.aw-btn-secondary:hover,
+.aw-btn-secondary:focus,
+.aw-btn-secondary:focus-visible,
+.aw-btn-secondary:active {
+    background-color: var(--aw-secondary-action-hover);
+    border: 2px solid var(--aw-secondary-action-hover);
+    color: #ffffff;
+}
+
+[data-aw-theme='dark'] .aw-btn-secondary:hover,
+[data-aw-theme='dark'] .aw-btn-secondary:focus,
+[data-aw-theme='dark'] .aw-btn-secondary:focus-visible,
+[data-aw-theme='dark'] .aw-btn-secondary:active {
+    background-color: #ffffff;
+    border: 2px solid #ffffff;
+    color: var(--aw-royal);
+}
+
+.aw-btn-secondary:hover,
+.aw-btn-secondary:focus-visible {
+    background: var(--aw-secondary-action-hover);
+    border-color: var(--aw-secondary-action-hover);
+    color: #ffffff;
+}
+
+[data-aw-theme='dark'] .aw-btn-secondary {
+    --bs-btn-color: var(--aw-secondary-action);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: var(--aw-secondary-action);
+
+    --bs-btn-hover-color: var(--aw-royal);
+    --bs-btn-hover-bg: #ffffff;
+    --bs-btn-hover-border-color: #ffffff;
+
+    --bs-btn-active-color: var(--aw-royal);
+    --bs-btn-active-bg: #ffffff;
+    --bs-btn-active-border-color: #ffffff;
+}
+
+[data-aw-theme='dark'] .aw-btn-secondary:hover,
+[data-aw-theme='dark'] .aw-btn-secondary:focus-visible {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: var(--aw-royal);
+}
+
+/* ---------- Dropdown menus ---------- */
+
+.dropdown-menu {
+    background: var(--aw-surface-raised);
+    border: 1px solid var(--aw-border);
+    box-shadow: var(--aw-shadow-sm);
+}
+
+.dropdown-item {
+    color: var(--aw-text);
+    transition:
+            color 150ms ease,
+            background-color 150ms ease;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    color: var(--aw-accent-highlight);
+    background:
+            color-mix(
+                    in srgb,
+                    var(--aw-accent-highlight) 10%,
+                    transparent
+            );
+}
+
+.dropdown-item.active,
+.dropdown-item:active {
+    color: var(--aw-accent-highlight);
+    background:
+            color-mix(
+                    in srgb,
+                    var(--aw-accent-highlight) 14%,
+                    transparent
+            );
+    font-weight: 600;
+}
+
+[data-aw-theme='dark'] .dropdown-menu {
+    background: var(--aw-surface-raised);
+    border-color: var(--aw-border);
+}
+
+[data-aw-theme='dark'] .dropdown-item {
+    color: var(--aw-text);
+}
+
+/* ---------- Account nested menu ---------- */
+
+.aw-account-submenu-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.aw-account-submenu-items {
+    padding: 0.25rem 0 0.25rem 1rem;
+}
+
+.aw-account-submenu-item {
+    display: flex;
+    align-items: center;
+
+    padding-left: 1rem;
+    font-size: 0.925rem;
+}
+
+.aw-submenu-chevron {
+    font-size: 0.75rem;
+
+    transition:
+            transform 150ms ease,
+            color 150ms ease;
+}
+
+.aw-submenu-chevron.open {
+    transform: rotate(90deg);
+}
+
+.aw-account-submenu-trigger:hover .aw-submenu-chevron,
+.aw-account-submenu-trigger:focus .aw-submenu-chevron {
+    color: var(--aw-accent-highlight);
+}
+
+/* ---------- Badges ---------- */
+
+.aw-badge {
+    background: color-mix(
+            in srgb,
+            var(--aw-accent) 12%,
+            transparent
+    );
+    color: var(--aw-accent);
+    border: 1px solid
+    color-mix(
+            in srgb,
+            var(--aw-accent) 25%,
+            transparent
+    );
+}
+
+/* ---------- Hero ---------- */
+
+.aw-hero {
+    padding: 5rem 0 4rem;
+}
+
+.aw-hero-copy {
+    max-width: 46rem;
+}
+
+/* ---------- Cards ---------- */
+
+.aw-card {
+    background: var(--aw-surface-raised);
+    border: 1px solid var(--aw-border);
+    border-radius: var(--aw-radius-lg);
+    transition:
+            transform 150ms ease,
+            box-shadow 150ms ease;
+}
+
+.aw-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--aw-shadow-sm);
+}
+
+/* ---------- App icons ---------- */
+
+.aw-app-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aw-app-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ---------- Sections ---------- */
+
+.aw-section-muted {
+    background: var(--aw-surface-raised);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 575.98px) {
+    .aw-hero {
+        padding: 3.5rem 0 3rem;
+    }
+
+    .aw-hero .display-4 {
+        font-size: 2.4rem;
+    }
+}
+
+.aw-account-menu-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text);
+
+    font-size: 1.5rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-account-menu-trigger:hover,
+.aw-account-menu-trigger:focus-visible,
+.aw-account-menu-trigger.show {
+    background: transparent;
+    color: var(--aw-accent-highlight);
+}
+
+.aw-account-menu-trigger::after {
+    display: none;
+}
+
+/* =========================================================
+   Temporary app theme preview
+   ========================================================= */
+
+.aw-theme-preview {
+    --app-primary: var(--aw-navy);
+
+    position: relative;
+
+    width: 100%;
+    height: 36rem;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    background: var(--aw-surface);
+    border: 1px solid var(--aw-border);
+    border-radius: var(--aw-radius-lg);
+}
+
+/* ---------- Preview header ---------- */
+
+.aw-theme-preview-header {
+    position: relative;
+    z-index: 3;
+
+    flex-shrink: 0;
+    min-height: 4rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    padding: 0.625rem 1rem;
+
+    background: var(--aw-surface);
+    color: var(--aw-text);
+
+    border-bottom: 1px solid var(--aw-border);
+}
+
+/* ---------- Preview logo ---------- */
+
+.aw-theme-preview-logo-container {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.aw-theme-preview-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ---------- Preview top navigation ---------- */
+
+.aw-preview-top-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.aw-preview-top-nav-item {
+    display: inline-grid;
+    justify-items: center;
+
+    padding: 0.4rem 0.65rem;
+
+    border: 0;
+    border-radius: var(--aw-radius-sm);
+
+    background: transparent;
+    color: var(--aw-text);
+
+    font-size: 0.875rem;
+    font-weight: 400;
+
+    transition: color 150ms ease;
+}
+
+.aw-preview-top-nav-item::after {
+    content: attr(data-label);
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 700;
+}
+
+.aw-preview-top-nav-item:hover {
+    color: var(--app-primary);
+    font-weight: 600;
+}
+
+.aw-preview-top-nav-item.active {
+    color: var(--app-primary);
+    font-weight: 700;
+}
+
+/* ---------- Preview Sign In ---------- */
+
+.aw-preview-sign-in {
+    background: var(--app-primary);
+    border: 2px solid var(--app-primary);
+    color: #ffffff;
+
+    transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            color 150ms ease;
+}
+
+.aw-preview-sign-in:hover,
+.aw-preview-sign-in:focus-visible {
+    background: #ffffff;
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+}
+
+[data-aw-theme='dark'] .aw-preview-sign-in:hover,
+[data-aw-theme='dark'] .aw-preview-sign-in:focus-visible {
+    border-color: #ffffff;
+}
+
+/* ---------- Preview shell ---------- */
+
+.aw-theme-preview-shell {
+    flex: 1;
+    min-height: 0;
+
+    display: flex;
+}
+
+/* ---------- Desktop side navigation ---------- */
+
+.aw-preview-side-nav {
+    width: 13rem;
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    overflow: hidden;
+
+    padding: 0.75rem;
+
+    background: var(--app-primary);
+}
+
+.aw-preview-side-nav-item {
+    width: 100%;
+    min-height: 2.75rem;
+
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    padding: 0.5rem 0.75rem;
+
+    border: 0;
+    border-radius: var(--aw-radius-sm);
+
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+
+    text-align: left;
+
+    transition:
+            color 150ms ease,
+            background-color 150ms ease;
+}
+
+.aw-preview-side-nav-item svg {
+    width: 1.25rem;
+    color: inherit;
+}
+
+.aw-preview-side-nav-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.aw-preview-side-nav-item.active {
+    background: #ffffff;
+    color: var(--app-primary);
+    font-weight: 600;
+}
+
+/* ---------- Preview page content ---------- */
+
+.aw-theme-preview-content {
+    min-width: 0;
+    flex: 1;
+
+    overflow-y: auto;
+
+    padding: 1.5rem;
+
+    background: var(--aw-surface);
+}
+
+/* ---------- Preview primary button ---------- */
+
+.aw-preview-btn-primary {
+    background: var(--app-primary);
+    border: 2px solid var(--app-primary);
+    color: #ffffff;
+
+    transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            color 150ms ease;
+}
+
+.aw-preview-btn-primary:hover,
+.aw-preview-btn-primary:focus-visible {
+    background: #ffffff;
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+}
+
+[data-aw-theme='dark'] .aw-preview-btn-primary:hover,
+[data-aw-theme='dark'] .aw-preview-btn-primary:focus-visible {
+    border-color: #ffffff;
+}
+
+/* ---------- Shared preview link ---------- */
+
+.aw-preview-link {
+    color: var(--aw-link);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.aw-preview-link:hover {
+    color: var(--aw-link-hover);
+    text-decoration: underline;
+}
+
+/* ---------- Shared preview tag ---------- */
+
+.aw-preview-tag {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 0.25rem 0.625rem;
+
+    background: var(--aw-tag-bg);
+    border: 1px solid var(--aw-tag-border);
+    border-radius: 999px;
+
+    color: var(--aw-tag-text);
+
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ---------- Mobile bottom navigation ---------- */
+
+.aw-preview-bottom-nav {
+    position: relative;
+    z-index: 3;
+
+    flex-shrink: 0;
+
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+
+    background: var(--app-primary);
+
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.aw-preview-bottom-nav-item {
+    min-height: 4rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+
+    border: 0;
+
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+
+    font-size: 0.75rem;
+
+    transition:
+            color 150ms ease,
+            background-color 150ms ease;
+}
+
+.aw-preview-bottom-nav-item svg {
+    font-size: 1.1rem;
+}
+
+.aw-preview-bottom-nav-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.aw-preview-bottom-nav-item.active {
+    background: #ffffff;
+    color: var(--app-primary);
+    font-weight: 600;
+}
+
+/* ---------- App themes ---------- */
+
+.aw-theme-agenda {
+    --app-primary: #0033a0;
+}
+
+.aw-theme-budget {
+    --app-primary: #00843d;
+}
+
+.aw-theme-chores {
+    --app-primary: #c69214;
+}
+
+.aw-theme-fitness {
+    --app-primary: #c52b29;
+}
+
+/* ---------- Preview responsive behavior ---------- */
+
+@media (max-width: 767.98px) {
+    .aw-theme-preview {
+        height: 34rem;
+    }
+
+    .aw-preview-side-nav {
+        display: none;
+    }
+
+    .aw-preview-bottom-nav {
+        display: grid;
+    }
+
+    .aw-preview-top-nav {
+        display: none;
+    }
+
+    .aw-theme-preview-content {
+        padding: 1rem;
+    }
+}
+
+/* ---------- My Profile ---------- */
+
+.aw-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.aw-profile-info {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.aw-profile-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    color: var(--aw-text);
+}
+
+.aw-profile-action {
+    flex-shrink: 0;
+}
+
+/* ---------- My Profile mobile ---------- */
+
+@media (max-width: 575.98px) {
+    .aw-profile-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .aw-profile-info {
+        width: 100%;
+    }
+
+    .aw-profile-action {
+        width: 100%;
+    }
+
+    .aw-profile-editable-row {
+        position: relative;
+    }
+
+    .aw-profile-editable-row .aw-profile-info {
+        padding-right: 2.75rem;
+    }
+
+    .aw-profile-edit {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+}
+
+.aw-profile-edit {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text-muted);
+
+    font-size: 1rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-profile-edit:hover,
+.aw-profile-edit:focus-visible {
+    color: var(--aw-accent-highlight);
+}
+
+.aw-profile-editable-row {
+    position: relative;
+}
+
+/* ---------- Mobile header navigation ---------- */
+
+@media (max-width: 767.98px) {
+    .aw-navbar .navbar-collapse {
+        padding-top: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .aw-navbar .aw-mobile-nav-row {
+        width: 100%;
+
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-end;
+
+        gap: 0.5rem;
+    }
+
+    .aw-navbar .aw-mobile-nav-row .nav-link {
+        padding: 0.5rem 0.35rem;
+        white-space: nowrap;
+    }
+
+    .aw-navbar .aw-header-icon,
+    .aw-navbar .aw-account-menu-trigger {
+        flex-shrink: 0;
+    }
+
+    .aw-navbar .aw-btn-accent {
+        flex-shrink: 0;
+        white-space: nowrap;
+        margin: 0 !important;
+    }
+
+    .aw-navbar .dropdown {
+        position: relative;
+    }
+
+    .aw-navbar .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        left: auto;
+
+        margin: 0;
+        z-index: 1050;
+    }
+}
