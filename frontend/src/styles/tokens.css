@@ -1,0 +1,72 @@
+:root {
+    --aw-navy: #002e5d;
+    --aw-royal: #0033a0;
+    --aw-royal-light: #4d9de0;
+}
+
+:root,
+[data-aw-theme='light'] {
+    --aw-surface: #ffffff;
+    --aw-surface-raised: #f8f9fa;
+    --aw-text: #212529;
+    --aw-text-muted: #6c757d;
+    --aw-border: #dee2e6;
+    --aw-link: #0057b8;
+    --aw-link-hover: #003f88;
+
+    --aw-tag-text: #334155;
+    --aw-tag-bg: #f1f5f9;
+    --aw-tag-border: #cbd5e1;
+
+    --aw-accent: var(--aw-navy);
+    --aw-accent-hover: var(--aw-royal);
+    --aw-accent-highlight: var(--aw-royal);
+    --aw-accent-foreground: #ffffff;
+
+    --aw-secondary-action: var(--aw-navy);
+    --aw-secondary-action-hover: var(--aw-royal);
+
+    --aw-radius-sm: 0.375rem;
+    --aw-radius-md: 0.75rem;
+    --aw-radius-lg: 1rem;
+
+    --aw-shadow-sm:
+            0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
+
+    --aw-nav-bg: var(--aw-navy);
+    --aw-nav-text: rgba(255, 255, 255, 0.78);
+    --aw-nav-text-active: var(--aw-navy);
+    --aw-nav-active-bg: #ffffff;
+    --aw-nav-hover-bg: rgba(255, 255, 255, 0.10);
+}
+
+[data-aw-theme='dark'] {
+    --aw-surface: #0f1720;
+    --aw-surface-raised: #18212b;
+    --aw-text: #f8f9fa;
+    --aw-text-muted: #adb5bd;
+    --aw-border: #2d3945;
+    --aw-link: #6ea8fe;
+    --aw-link-hover: #9ec5fe;
+
+    --aw-tag-text: #dbeafe;
+    --aw-tag-bg: #1e293b;
+    --aw-tag-border: #475569;
+
+    --aw-accent: var(--aw-royal);
+    --aw-accent-hover: var(--aw-royal-light);
+    --aw-accent-highlight: var(--aw-royal-light);
+    --aw-accent-foreground: #ffffff;
+
+    --aw-secondary-action: var(--aw-royal-light);
+    --aw-secondary-action-hover: #ffffff;
+
+    --aw-shadow-sm:
+            0 0.125rem 0.5rem rgba(0, 0, 0, 0.35);
+
+    --aw-nav-bg: #243447;
+    --aw-nav-text: rgba(255, 255, 255, 0.78);
+    --aw-nav-text-active: var(--aw-navy);
+    --aw-nav-active-bg: #ffffff;
+    --aw-nav-hover-bg: rgba(255, 255, 255, 0.10);
+}
