@@ -13,6 +13,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      secrets:
+        - github_token
 
     restart: unless-stopped
 
@@ -34,3 +36,7 @@ networks:
 
   alanwilliams-backend:
     external: true
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN
