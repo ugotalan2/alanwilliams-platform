@@ -5,8 +5,13 @@ import agendaIcon from '../styles/icons/agenda-icon.png'
 import budgetIcon from '../styles/icons/budget-icon.png'
 import choreIcon from '../styles/icons/chore-icon.png'
 import fitnessIcon from '../styles/icons/fitness-icon.png'
+import { useAuth, useClerk } from '@clerk/react'
 
 function HomePage() {
+
+    const { isLoaded, isSignedIn } = useAuth()
+    const { openSignIn } = useClerk()
+
     return (
         <>
             <section className="aw-hero">
@@ -33,16 +38,15 @@ function HomePage() {
                                     <FontAwesomeIcon icon={faArrowRight} className="ms-2" />
                                 </Link>
 
-                                <button
-                                    type="button"
-                                    className="btn aw-btn-secondary btn-lg"
-                                    onClick={() => {
-                                        // Clerk sign-in will replace this.
-                                        console.log('Sign in')
-                                    }}
-                                >
-                                    Sign In
-                                </button>
+                                {isLoaded && !isSignedIn && (
+                                    <button
+                                        type="button"
+                                        className="btn aw-btn-secondary btn-lg"
+                                        onClick={() => openSignIn()}
+                                    >
+                                        Sign In
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -65,6 +65,11 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.alanwilliams</groupId>
+            <artifactId>alanwilliams-spring-security</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -74,5 +79,11 @@
             </plugin>
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/ugotalan2/alanwilliams-spring-security</url>
+        </repository>
+    </repositories>
 
 </project>
