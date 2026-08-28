@@ -46,7 +46,9 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5174",
-                "http://10.0.0.31:5174"
+                "http://10.0.0.31:5174",
+                "https://test.alanwilliams.app",
+                "https://alanwilliams.app"
         ));
 
         configuration.setAllowedMethods(List.of(
