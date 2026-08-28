@@ -561,6 +561,76 @@ rely on copying PostgreSQL container filesystem contents.
 Agenda's restore procedure has already been proven and remains the
 baseline restore discipline for the shared database service.
 
+## Shared Java Library Distribution
+
+Reusable AlanWilliams Java libraries are distributed as versioned Maven
+artifacts through GitHub Packages rather than copied JARs or source builds
+inside consumer repositories.
+
+Current shared library:
+
+``` text
+com.alanwilliams:alanwilliams-spring-security
+-> GitHub Packages
+-> consumed by alanwilliams-platform and future Java backends
+```
+
+Package/authentication rules:
+
+-   `alanwilliams-spring-security` publishes with its repository
+    `GITHUB_TOKEN` using `packages: write`.
+-   Consumer repositories authenticate to GitHub Packages with a
+    classic PAT limited to `read:packages` when cross-repository package
+    access is required.
+-   Public repository/package visibility does not remove Maven registry
+    authentication requirements.
+-   Package credentials are build credentials only and must not be baked
+    into application images. Docker builds pass them with BuildKit
+    secrets.
+-   Consumer applications remain responsible for their own
+    `SecurityFilterChain` and route authorization. The shared library
+    provides reusable Clerk JWT validation and principal extraction, not
+    app-specific authorization policy.
+
+## Clerk Deployment Configuration
+
+Clerk frontend and backend configuration use different delivery paths.
+
+Frontend Vite configuration is build-time:
+
+``` text
+/opt/alanwilliams/platform/<environment>/.env
+-> docker-compose.deploy.yml build.args
+-> frontend/Dockerfile.prod ARG/ENV
+-> npm run build
+-> browser bundle
+```
+
+The current frontend variable is:
+
+``` text
+VITE_CLERK_PUBLISHABLE_KEY
+```
+
+Clerk publishable keys are intentionally browser-visible. Secret Clerk
+keys must never be exposed through `VITE_*` variables.
+
+Backend Clerk JWT configuration is runtime configuration:
+
+``` text
+CLERK_ISSUER
+CLERK_AUTHORIZED_PARTIES
+```
+
+Local and test currently use the Clerk Development instance. Production
+uses a separate Clerk Production instance when activated. Environment
+values must be replaced with the real production issuer/publishable key
+before production authentication is enabled.
+
+The Platform test deployment has verified Clerk frontend initialization
+and interactive sign-in/sign-out at `test.alanwilliams.app`. Backend JWT
+acceptance remains a separate validation step.
+
 ## Deployment Model
 
 CI/CD conventions:
@@ -1058,6 +1128,24 @@ intended source of truth for that boundary.
 
 -   Shared Clerk/Spring plumbing belongs in a reusable library, not a
     central auth microservice.
+
+-   Reusable AlanWilliams Java libraries are published as Maven artifacts
+    through GitHub Packages rather than copied into consumer repositories.
+
+-   Cross-repository Maven package consumption uses authenticated GitHub
+    Packages access; consumer build credentials are passed to Docker with
+    BuildKit secrets and are not included in runtime images.
+
+-   Consumer applications own their `SecurityFilterChain` and route-level
+    authorization; the shared security library owns generic Clerk JWT
+    validation and principal extraction.
+
+-   Vite Clerk publishable keys are injected at frontend build time through
+    Compose build arguments; backend Clerk issuer/authorized-party values
+    are runtime environment configuration.
+
+-   Local/test Clerk authentication uses the Development Clerk instance;
+    production uses a separate Production Clerk instance.
 
 -   Platform backend is separately deployable as its own Docker
     image/container.
