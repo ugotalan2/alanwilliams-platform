@@ -38,6 +38,8 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
 
       - name: Make mvnw executable
         run: chmod +x backend/mvnw

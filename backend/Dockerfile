@@ -7,14 +7,10 @@ COPY mvnw pom.xml settings.xml ./
 
 RUN chmod +x mvnw
 
-RUN --mount=type=secret,id=github_token \
-    GITHUB_TOKEN="$(cat /run/secrets/github_token)" \
-    GITHUB_ACTOR=ugotalan2 \
-    ./mvnw -s settings.xml dependency:go-offline
-
 COPY src src
 
-RUN --mount=type=secret,id=github_token \
+RUN --mount=type=cache,target=/root/.m2/repository \
+    --mount=type=secret,id=github_token \
     GITHUB_TOKEN="$(cat /run/secrets/github_token)" \
     GITHUB_ACTOR=ugotalan2 \
     ./mvnw -s settings.xml clean package -DskipTests

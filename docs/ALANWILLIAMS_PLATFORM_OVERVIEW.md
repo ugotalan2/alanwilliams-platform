@@ -492,22 +492,54 @@ alanwilliams-backend
 Cloudflared is attached to the Platform and Agenda test/prod web
 networks.
 
-## Shared Authentication Direction
+## Shared Java Library Delivery
+
+Reusable Java libraries are versioned Maven artifacts published through
+GitHub Packages. Platform consumes
+`com.alanwilliams:alanwilliams-spring-security` from that registry.
+Consumer builds authenticate with package-read credentials, while the
+security repository publishes with package-write permission. Docker build
+credentials are delivered through BuildKit secrets and are not retained in
+the runtime image.
+
+## Shared Authentication Status
 
 Clerk remains the shared identity and SSO provider.
 
 AlanWilliams Apps will not store passwords, password hashes, recovery
 credentials, or implement its own authorization server.
 
-Each Java backend will validate Clerk JWTs locally. Reusable Spring
-Security integration belongs in `alanwilliams-spring-security`.
+The Platform frontend now uses Clerk authentication state and supports
+real sign-in/sign-out. The test deployment at `test.alanwilliams.app` has
+verified Clerk initialization and interactive sign-in/sign-out using the
+Clerk Development instance.
+
+Reusable Spring Security integration is implemented in
+`alanwilliams-spring-security` and consumed by Platform as a Maven
+artifact from GitHub Packages. Each Java backend validates Clerk JWTs
+locally, while each consumer application owns its own
+`SecurityFilterChain` and route authorization.
+
+Deployment configuration is split intentionally:
+
+``` text
+Frontend build-time:
+VITE_CLERK_PUBLISHABLE_KEY
+
+Backend runtime:
+CLERK_ISSUER
+CLERK_AUTHORIZED_PARTIES
+```
+
+Frontend build-time values flow from the server environment file through
+Compose build arguments into `Dockerfile.prod` before `npm run build`.
+GitHub Packages credentials are supplied to backend Docker builds with a
+BuildKit secret rather than being copied into the image.
 
 The next authentication work is:
 
--   add Clerk to Platform frontend
--   replace mock signed-in state with Clerk state
--   wire sign-in/sign-out
--   wire Clerk security/account management
+-   prove a protected Platform backend request using a real Clerk JWT
+-   expose/verify the authenticated Clerk user ID principal
 -   link authenticated Clerk users to Platform Person
 -   persist Platform profile and appearance settings
 -   then integrate Agenda with the same identity contract
@@ -528,6 +560,12 @@ Verified:
 -   Cloudflare connectivity for Agenda and Platform web networks
 -   Platform responsive shell/profile UI
 -   local Platform Docker development and backend database connectivity
+-   Clerk frontend integration with real sign-in/sign-out
+-   Clerk test deployment sign-in/sign-out at `test.alanwilliams.app`
+-   reusable `alanwilliams-spring-security` library consumed by Platform
+-   GitHub Packages publication/consumption for shared Maven libraries
+-   BuildKit secret delivery of Maven package credentials during Docker builds
+-   frontend build-time Clerk publishable-key injection for deployed Vite builds
 -   PostgreSQL admin credential rotation and app-role isolation
 -   production backup scripts with per-database daily/weekly policy
 -   physical-disk backup storage over SMB plus Google Drive off-site
@@ -536,24 +574,26 @@ Verified:
     execution verified
 -   Agenda restore procedure previously proven
 
-Not yet implemented:
+Not yet implemented / proven:
 
--   Clerk integration
+-   protected Platform API call using a real Clerk JWT in the deployed test environment
+-   authenticated Clerk user-to-Platform Person resolution/linkage
 -   persisted Platform Person/profile schema
--   shared Spring Security / Clerk JWT validation library
--   Agenda-to-Platform identity integration \## Near-Term Sequence
+-   persisted global appearance preference and notification email
+-   Agenda-to-Platform identity integration
+-   production Clerk instance activation and production auth verification
 
-1.  Add Clerk to the Platform frontend and replace mock authentication
-    state.
-2.  Implement shared Spring Security / Clerk JWT validation in
-    `alanwilliams-spring-security`.
-3.  Implement Platform Person/profile persistence and Clerk linkage.
-4.  Persist global appearance preference and notification email.
-5.  Integrate Agenda with Platform identity and shared authentication.
-6.  Continue Agenda domain/schema migration.
-7.  Bring Budget/Finance into the same Platform/auth/identity/database
+## Near-Term Sequence
+
+1.  Prove a protected Platform backend endpoint with a real Clerk JWT and
+    verify Clerk user ID principal extraction.
+2.  Implement Platform Person/profile persistence and Clerk linkage.
+3.  Persist global appearance preference and notification email.
+4.  Integrate Agenda with Platform identity and shared authentication.
+5.  Continue Agenda domain/schema migration.
+6.  Bring Budget/Finance into the same Platform/auth/identity/database
     model.
-8.  Add future production databases to the appropriate backup policy
+7.  Add future production databases to the appropriate backup policy
     when each app goes live.
 
 ## Explicitly Deferred
