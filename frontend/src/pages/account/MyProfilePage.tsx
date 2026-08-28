@@ -5,8 +5,28 @@ import {
     faUser,
     faPen,
 } from '@fortawesome/free-solid-svg-icons'
+import { useAuth } from "@clerk/react";
 
 function MyProfilePage() {
+
+    const { getToken } = useAuth();
+
+    async function testBackendAuth() {
+        const token = await getToken();
+
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/me`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        console.log("Status:", response.status);
+        console.log("Response:", await response.text());
+    }
+
     const profile = {
         name: 'Alan Williams',
         email: 'alan@example.com',
@@ -25,6 +45,17 @@ function MyProfilePage() {
                         <p className="aw-text-muted mb-0">
                             Your shared AlanWilliams Apps account information.
                         </p>
+
+
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={testBackendAuth}
+                        >
+                            Test Backend Auth
+                        </button>
+
+
                     </div>
 
                     <div className="aw-card p-3 p-md-4">

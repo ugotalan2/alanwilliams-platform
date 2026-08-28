@@ -536,10 +536,29 @@ Compose build arguments into `Dockerfile.prod` before `npm run build`.
 GitHub Packages credentials are supplied to backend Docker builds with a
 BuildKit secret rather than being copied into the image.
 
+Local protected backend authentication is now proven end to end:
+
+``` text
+Clerk signed-in React client
+-> getToken()
+-> Authorization: Bearer <token>
+-> Platform Spring Security
+-> Clerk JWT validated locally
+-> ClerkPrincipal extracted from sub
+-> GET /me
+-> 200 {"clerkUserId":"user_..."}
+```
+
+The Platform application owns CORS configuration for its frontend/backend
+boundary. Local browser preflight and authenticated requests are working.
+The shared `alanwilliams-spring-security` library remains responsible for
+generic Clerk JWT validation and principal extraction, not app-specific
+CORS or route policy.
+
 The next authentication work is:
 
--   prove a protected Platform backend request using a real Clerk JWT
--   expose/verify the authenticated Clerk user ID principal
+-   repeat the protected API proof through `test.alanwilliams.app` and the
+    deployed test API route
 -   link authenticated Clerk users to Platform Person
 -   persist Platform profile and appearance settings
 -   then integrate Agenda with the same identity contract
@@ -562,6 +581,9 @@ Verified:
 -   local Platform Docker development and backend database connectivity
 -   Clerk frontend integration with real sign-in/sign-out
 -   Clerk test deployment sign-in/sign-out at `test.alanwilliams.app`
+-   local protected Platform API call with a real Clerk JWT
+-   local authenticated Clerk user ID principal extraction via `ClerkPrincipal`
+-   local CORS preflight/authenticated browser request path
 -   reusable `alanwilliams-spring-security` library consumed by Platform
 -   GitHub Packages publication/consumption for shared Maven libraries
 -   BuildKit secret delivery of Maven package credentials during Docker builds
@@ -585,8 +607,8 @@ Not yet implemented / proven:
 
 ## Near-Term Sequence
 
-1.  Prove a protected Platform backend endpoint with a real Clerk JWT and
-    verify Clerk user ID principal extraction.
+1.  Repeat the protected Platform API Clerk JWT proof through the deployed
+    test environment (`test.alanwilliams.app` -> test Platform API route).
 2.  Implement Platform Person/profile persistence and Clerk linkage.
 3.  Persist global appearance preference and notification email.
 4.  Integrate Agenda with Platform identity and shared authentication.
