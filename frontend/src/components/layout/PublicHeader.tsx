@@ -2,13 +2,15 @@ import { NavLink } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRightToBracket, } from '@fortawesome/free-solid-svg-icons'
 import alanWilliamsIcon from '../../styles/icons/alanwilliams-icon.png'
-import alanWilliamsIconDark from '../../styles/icons/alanwilliams-dark-icon.png'
+import alanWilliamsIconDark from '../../styles/icons/alanwilliams-icon-white.png'
 import AccountMenu from '../account/AccountMenu'
 import AppearanceMenu from "../account/AppearanceMenu.tsx";
+import { useAuth, useClerk } from '@clerk/react'
 
 function PublicHeader() {
 
-    const isSignedIn = true
+    const { isLoaded, isSignedIn } = useAuth()
+    const { openSignIn } = useClerk()
 
     return (
         <nav className="navbar navbar-expand-md aw-navbar sticky-top">
@@ -77,26 +79,26 @@ function PublicHeader() {
                             Contact
                         </NavLink>
 
-                        {isSignedIn ? (
-                            <AccountMenu />
-                        ) : (
-                            <>
-                                <AppearanceMenu />
+                        {isLoaded && (
+                            isSignedIn ? (
+                                <AccountMenu />
+                            ) : (
+                                <>
+                                    <AppearanceMenu />
 
-                                <button
-                                    type="button"
-                                    className="btn aw-btn-accent aw-mobile-sign-in ms-md-2"
-                                    onClick={() => {
-                                        console.log('Sign in')
-                                    }}
-                                >
-                                    <FontAwesomeIcon
-                                        icon={faRightToBracket}
-                                        className="me-2"
-                                    />
-                                    Sign In
-                                </button>
-                            </>
+                                    <button
+                                        type="button"
+                                        className="btn aw-btn-accent aw-mobile-sign-in ms-md-2"
+                                        onClick={() => openSignIn()}
+                                    >
+                                        <FontAwesomeIcon
+                                            icon={faRightToBracket}
+                                            className="me-2"
+                                        />
+                                        Sign In
+                                    </button>
+                                </>
+                            )
                         )}
                     </div>
                 </div>

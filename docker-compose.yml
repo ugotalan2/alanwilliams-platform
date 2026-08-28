@@ -20,11 +20,16 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      secrets:
+        - github_token
 
     container_name: alanwilliams-platform-backend
 
     ports:
       - "8081:8080"
+
+    env_file:
+      - ./backend/.env.local
 
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/platform_dev
@@ -38,3 +43,7 @@ services:
 networks:
   alanwilliams-backend:
     external: true
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

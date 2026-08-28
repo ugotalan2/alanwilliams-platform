@@ -17,6 +17,7 @@ import {
 } from '../../utils/returnTo'
 import { useTheme} from "../../theme/useTheme.ts";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from '@clerk/react'
 
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
@@ -62,6 +63,7 @@ function AppearanceOption({
 }
 
 function AccountMenu() {
+    const { signOut } = useAuth()
     const location = useLocation()
     const navigate = useNavigate()
 
@@ -239,7 +241,7 @@ function AccountMenu() {
                         type="button"
                         className="dropdown-item"
                         onClick={() => {
-                            console.log('Sign out')
+                            void signOut()
                         }}
                     >
                         <FontAwesomeIcon
