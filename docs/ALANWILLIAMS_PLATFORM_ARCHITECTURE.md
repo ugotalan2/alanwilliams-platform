@@ -628,8 +628,35 @@ values must be replaced with the real production issuer/publishable key
 before production authentication is enabled.
 
 The Platform test deployment has verified Clerk frontend initialization
-and interactive sign-in/sign-out at `test.alanwilliams.app`. Backend JWT
-acceptance remains a separate validation step.
+and interactive sign-in/sign-out at `test.alanwilliams.app`.
+
+Local end-to-end backend JWT validation is now proven. A signed-in React
+client obtains a real Clerk session token and calls the Platform backend
+with `Authorization: Bearer <token>`. Spring Security validates the Clerk
+JWT locally, the shared security library extracts the Clerk user ID from
+`sub`, and the Platform controller receives it as `ClerkPrincipal`.
+
+The local proof endpoint is:
+
+``` text
+GET http://localhost:8081/me
+-> authenticated Clerk JWT
+-> 200
+-> {"clerkUserId":"user_..."}
+```
+
+For deployed environments, `/platform/...` remains the external API route
+prefix behind the shared API routing convention. Direct local backend
+access does not require the `/platform` prefix.
+
+CORS policy is owned by the Platform application rather than the shared
+security library. Local development currently allows the intended frontend
+origins, including `http://localhost:5174`, and permits authenticated
+browser requests with the `Authorization` header. OPTIONS preflight
+requests are permitted so browser requests can reach authenticated routes.
+
+Backend JWT acceptance in the deployed test environment is still a separate
+verification step.
 
 ## Deployment Model
 
@@ -1136,9 +1163,16 @@ intended source of truth for that boundary.
     Packages access; consumer build credentials are passed to Docker with
     BuildKit secrets and are not included in runtime images.
 
--   Consumer applications own their `SecurityFilterChain` and route-level
-    authorization; the shared security library owns generic Clerk JWT
-    validation and principal extraction.
+-   Consumer applications own their `SecurityFilterChain`, route-level
+    authorization, and CORS policy; the shared security library owns generic
+    Clerk JWT validation and principal extraction.
+
+-   Local Platform authentication has proven the complete browser-to-backend
+    Clerk JWT path: frontend token acquisition, CORS preflight, Spring JWT
+    validation, and Clerk user ID principal extraction.
+
+-   Direct local backend routes use the controller path (for example `/me`);
+    deployed API routing adds the external `/platform` service prefix.
 
 -   Vite Clerk publishable keys are injected at frontend build time through
     Compose build arguments; backend Clerk issuer/authorized-party values

@@ -31,11 +31,6 @@ services:
     env_file:
       - ./backend/.env.local
 
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/platform_dev
-      SPRING_DATASOURCE_USERNAME: alanwilliams
-      SPRING_DATASOURCE_PASSWORD: alanwilliams
-
     networks:
       - default
       - alanwilliams-backend
