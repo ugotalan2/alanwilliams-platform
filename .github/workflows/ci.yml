@@ -42,6 +42,15 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x backend/mvnw
 
+      - name: Verify Backend Environment
+        env:
+          CLERK_ISSUER: https://flexible-swan-3121.clerk.accounts.dev
+          CLERK_AUTHORIZED_PARTIES: http://localhost:5174
+        run: |
+          test -n "$CLERK_ISSUER"
+          test -n "$CLERK_AUTHORIZED_PARTIES"
+          echo "Clerk CI environment is configured"
+
       - name: Run Backend Tests
         working-directory: ./backend
         env:
