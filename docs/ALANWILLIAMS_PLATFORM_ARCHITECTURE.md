@@ -231,6 +231,7 @@ Platform owns:
 -   Clerk user linkage
 -   canonical/default name
 -   notification/contact email
+-   preferred IANA timezone
 -   global appearance preference
 -   duplicate reconciliation/merge
 
@@ -267,6 +268,45 @@ Rule:
 Changing email must not create a new Person or rewrite historical
 relationships.
 
+
+### Person Claim / Account Linking
+
+A Platform Person may be provisioned by an application administrator before the
+person has a Clerk account. Account linking is explicit and must never happen
+silently from email equality alone.
+
+Rules:
+
+-   Email may privately help discover an existing unclaimed Person or invitation.
+-   A valid app invitation/claim token plus an authenticated Clerk session may be
+    used to explicitly claim an unlinked Person.
+-   Invitation acceptance always requires an explicit confirmation step. An
+    already-active Clerk session must never automatically claim a Person or accept
+    a membership.
+-   Confirmation UI should clearly identify the currently signed-in account and
+    provide a `Not me` / switch-account path for shared-device safety.
+-   One Clerk user may link to only one Platform Person, and one Platform Person
+    may link to at most one Clerk user. Claiming must be atomic.
+-   A Person that is already linked may only accept an invitation while signed in
+    as that same Clerk identity.
+-   Changing the email of an unlinked Person invalidates outstanding account-claim
+    invitations issued to the prior address.
+-   Once linked, ordinary app administrators may no longer edit the canonical
+    Platform name or notification email; those belong to the account owner.
+-   Removing an app membership never deletes the Platform Person or its Clerk
+    linkage.
+
+For a newly provisioned Person, `name` remains required. If Clerk does not provide
+a suitable name during self-service signup, onboarding must collect one before a
+new canonical Person is created. OAuth-provided names may be used only as a
+prefill and remain editable by the new account owner.
+
+`time_zone` stores a nullable IANA timezone ID such as `America/Chicago`. `NULL`
+means the client may follow the current device/browser timezone. Travel must not
+silently rewrite a stored preferred timezone. Domain events that have their own
+timezone semantics, such as a scheduled meeting, own that timezone independently
+of the Person preference.
+
 ## Platform Person Suggested Shape
 
 The final schema should be designed during implementation, but current
@@ -275,8 +315,9 @@ conceptual fields are:
 ``` text
 person
 - id
-- name
+- name (required)
 - notification_email (nullable)
+- time_zone (nullable IANA timezone ID)
 - appearance_mode (SYSTEM | LIGHT | DARK)
 - clerk_user_id (nullable, unique when present)
 - status (ACTIVE | INACTIVE | MERGED)
@@ -293,23 +334,23 @@ editable afterward.
 
 ### Contextual Display Names
 
-The Platform `person.name` is the default.
-
-Apps may define a nullable contextual display name on the relevant
-membership/relationship:
+The Platform `person.name` is the canonical cross-app name. Applications own
+contextual display names on their membership/relationship records:
 
 ``` text
 Agenda organization membership.display_name
-Finance household membership.display_name
+Budget household membership.display_name
 Chores household membership.display_name
 ```
 
-Resolution:
+For contexts that use a managed display name, the application should snapshot the
+admin-supplied name into the membership when the membership is created. If a new
+Platform Person is also provisioned at that time, the same value may seed
+`person.name`; after creation the two values are independent. Later Platform name
+changes do not automatically rewrite app display names.
 
-``` text
-context display_name
--> if null/blank, Platform person.name
-```
+Applications may allow members to request display-name changes while retaining
+admin approval over the effective organization/household-visible value.
 
 Do not put multi-context display-name overrides on Platform Person.
 
@@ -416,6 +457,26 @@ Examples:
 /budget/...
 ```
 
+Each backend owns its service prefix as its Spring servlet context path.
+Current examples:
+
+``` text
+Platform -> server.servlet.context-path=/platform
+Agenda   -> server.servlet.context-path=/agenda
+```
+
+Cloudflare Tunnel uses the service path only to select the correct backend
+and preserves the original request path. It does not prepend a second copy
+of the service prefix. Current routing direction is therefore:
+
+``` text
+api-test.alanwilliams.app/platform/* -> Platform test backend
+api-test.alanwilliams.app/agenda/*   -> Agenda test backend
+
+api.alanwilliams.app/platform/*      -> Platform production backend
+api.alanwilliams.app/agenda/*        -> Agenda production backend
+```
+
 A dedicated router/reverse-proxy service can be introduced when multiple
 backends make it worthwhile. Do not introduce one solely to satisfy a
 microservice pattern.
@@ -436,7 +497,10 @@ alanwilliams-postgres
 
 The runtime is owned by `alanwilliams-database`.
 
-Each app owns its own database schema and Flyway migrations.
+Each app owns its own database schema and Flyway migrations. Platform currently
+uses Spring Boot 4.x Flyway integration via `spring-boot-flyway` plus
+`flyway-database-postgresql`; migrations use the conventional
+`classpath:db/migration` location.
 
 Cross-database foreign keys are not assumed.
 
@@ -465,6 +529,7 @@ agenda_prod     -> agenda_prod_app
 agenda_test     -> agenda_test_app
 platform_prod   -> platform_prod_app
 platform_test   -> platform_test_app
+platform_dev    -> platform_dev_app (local Platform development)
 ```
 
 Application backends must not use `postgres_admin`.
@@ -493,6 +558,25 @@ Docker app backends:
 ``` text
 postgres:5432
 ```
+
+Current local Platform database contract:
+
+``` text
+platform_dev -> platform_dev_app
+jdbc:postgresql://postgres:5432/platform_dev
+```
+
+The local Platform Compose stack loads backend runtime variables from
+`backend/.env.local`. The standard local build/start command is:
+
+``` text
+docker compose --env-file ./backend/.env.local up -d --build
+```
+
+The environment file supplies runtime configuration such as datasource and Clerk
+settings. Maven/GitHub Packages credentials remain build-only credentials and are
+provided separately through BuildKit secrets rather than being stored as runtime
+environment values or baked into the image.
 
 Running Platform does not require Agenda containers to be running and
 vice versa.
@@ -636,18 +720,24 @@ with `Authorization: Bearer <token>`. Spring Security validates the Clerk
 JWT locally, the shared security library extracts the Clerk user ID from
 `sub`, and the Platform controller receives it as `ClerkPrincipal`.
 
-The local proof endpoint is:
+The protected Platform proof endpoint is now consistently exposed under
+the Platform servlet context path:
 
 ``` text
-GET http://localhost:8081/me
+Local:
+GET http://localhost:8081/platform/me
+
+Deployed test:
+GET https://api-test.alanwilliams.app/platform/me
+
 -> authenticated Clerk JWT
 -> 200
 -> {"clerkUserId":"user_..."}
 ```
 
-For deployed environments, `/platform/...` remains the external API route
-prefix behind the shared API routing convention. Direct local backend
-access does not require the `/platform` prefix.
+Platform owns `server.servlet.context-path=/platform`, matching Agenda's
+service-prefix pattern. Frontend API configuration therefore includes the
+`/platform` base path in local and deployed environments.
 
 CORS policy is owned by the Platform application rather than the shared
 security library. Local development currently allows the intended frontend
@@ -655,8 +745,12 @@ origins, including `http://localhost:5174`, and permits authenticated
 browser requests with the `Authorization` header. OPTIONS preflight
 requests are permitted so browser requests can reach authenticated routes.
 
-Backend JWT acceptance in the deployed test environment is still a separate
-verification step.
+Deployed test backend JWT acceptance is now proven end to end. A signed-in
+user at `test.alanwilliams.app` obtains a real Clerk token and successfully
+calls `https://api-test.alanwilliams.app/platform/me`. The browser preflight
+succeeds, Cloudflare routes `/platform/*` to the Platform test backend, Spring
+validates the JWT, and `ClerkPrincipal` returns the Clerk `sub` as the
+authenticated Clerk user ID.
 
 ## Deployment Model
 
@@ -1136,6 +1230,19 @@ intended source of truth for that boundary.
 
 -   Each app still owns its own separate database and Flyway migrations.
 
+-   Local Platform development uses `platform_dev -> platform_dev_app` on the
+    shared local PostgreSQL runtime. The Platform backend connects from Docker at
+    `jdbc:postgresql://postgres:5432/platform_dev`.
+
+-   Platform local Compose builds/starts use
+    `docker compose --env-file ./backend/.env.local up -d --build` so backend
+    runtime datasource and Clerk variables are loaded explicitly. GitHub Packages
+    Maven credentials remain separate BuildKit build secrets.
+
+-   Spring Boot 4 Platform Flyway integration uses `spring-boot-flyway` with
+    `flyway-database-postgresql`; Platform migrations live under
+    `backend/src/main/resources/db/migration`.
+
 -   App backend containers connect to shared PostgreSQL over the
     external `alanwilliams-backend` network using `postgres:5432`.
 
@@ -1148,6 +1255,25 @@ intended source of truth for that boundary.
 -   Platform owns canonical Person.
 
 -   One Person is shared across all connected apps.
+
+-   Platform Person `name` is required; missing names are collected during
+    onboarding rather than represented as null/fake email-derived names.
+
+-   Platform Person may store a nullable preferred IANA timezone; app/domain
+    events own their own timezone semantics independently.
+
+-   Email may discover an unclaimed Person but never silently establishes
+    identity. Person claim/linking requires explicit confirmation and authenticated
+    Clerk identity.
+
+-   Active Clerk sessions never auto-accept invitations or auto-link Persons;
+    invitation confirmation must expose a `Not me` / switch-account path.
+
+-   Once a Person is linked to Clerk, ordinary app admins cannot edit the
+    canonical Platform name or notification email.
+
+-   App memberships own contextual display names. Admin-supplied membership names
+    are snapshots and do not automatically track later Platform name changes.
 
 -   App databases remain separate and own domain authorization/data.
 
@@ -1167,12 +1293,14 @@ intended source of truth for that boundary.
     authorization, and CORS policy; the shared security library owns generic
     Clerk JWT validation and principal extraction.
 
--   Local Platform authentication has proven the complete browser-to-backend
-    Clerk JWT path: frontend token acquisition, CORS preflight, Spring JWT
-    validation, and Clerk user ID principal extraction.
+-   Local and deployed-test Platform authentication have proven the complete
+    browser-to-backend Clerk JWT path: frontend token acquisition, CORS
+    preflight, Cloudflare path routing, Spring JWT validation, and Clerk user
+    ID principal extraction.
 
--   Direct local backend routes use the controller path (for example `/me`);
-    deployed API routing adds the external `/platform` service prefix.
+-   Platform owns the Spring servlet context path `/platform`; Agenda owns
+    `/agenda`. Cloudflare uses these prefixes to route the shared API hostname
+    to the correct backend while preserving the original request path.
 
 -   Vite Clerk publishable keys are injected at frontend build time through
     Compose build arguments; backend Clerk issuer/authorized-party values

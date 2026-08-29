@@ -102,8 +102,9 @@ Current Platform profile direction:
 
 ``` text
 Person
-- canonical name
+- required canonical name
 - notification/contact email
+- preferred IANA timezone (nullable; device/browser timezone when unset)
 - global appearance mode: SYSTEM | LIGHT | DARK
 - Clerk user linkage
 - status / merge metadata
@@ -113,12 +114,24 @@ The notification email is Platform-owned and is where AlanWilliams Apps
 notifications are sent. Changing it does not change Clerk sign-in
 identity.
 
+
+### Account Claim Direction
+
+Applications may provision a Person before that person has a Clerk account. A
+secure invitation/claim flow links that existing Person to a Clerk user later.
+Email matching may privately help locate an invitation, but matching email alone
+never performs the permanent identity link.
+
+Invitation acceptance is explicit even when a Clerk session is already active.
+The confirmation screen identifies the signed-in account and offers a `Not me` /
+switch-account path to protect shared computers. Once linked, the account owner
+controls canonical Platform name and notification email; app admins retain control
+only over app memberships, roles/permissions, and contextual display names.
+
 ### Context-Specific Display Names
 
-The Platform name is the default cross-app name.
-
-Apps may allow a more specific display name where a social/group context
-exists:
+The Platform name is the canonical cross-app name. Apps may own a separate
+contextual display name where a social/group context exists:
 
 ``` text
 Platform Person.name = Alan Williams
@@ -129,25 +142,22 @@ Agenda / SCV Ward membership
 Agenda / Family Council membership
 -> display_name = Dad
 
-Finance / household membership
+Budget / household membership
 -> display_name = Alan
 
 Chores / household membership
 -> display_name = Dad
 ```
 
-Fallback rule:
+For managed memberships, the app snapshots the admin-supplied display name when
+the membership is created. If a new Platform Person is provisioned at the same
+time, that same value may seed `Person.name`, but the Platform name and app display
+name are independent afterward. A later Platform name change does not silently
+change the app display name.
 
-``` text
-context-specific display_name
--> if blank, Platform Person.name
-```
-
-Display-name overrides belong to the app membership/context that needs
-them, not to the Platform Person.
-
-Apps or contexts that do not need social names do not need a
-display-name field.
+Apps may allow member-requested display-name changes subject to app-admin approval.
+Display-name overrides belong to the app membership/context that needs them, not
+to the Platform Person.
 
 ## Shared vs App-Specific Ownership
 
@@ -294,13 +304,19 @@ Shared network:
 alanwilliams-backend
 ```
 
-Current databases:
+Current deployed databases:
 
 ``` text
 agenda_prod
 agenda_test
 platform_prod
 platform_test
+```
+
+Current local Platform development database:
+
+``` text
+platform_dev -> platform_dev_app
 ```
 
 Apps use dedicated per-environment database roles:
@@ -316,8 +332,11 @@ platform_test   -> platform_test_app
 creation, and backup/restore operations. Application backends must not
 run as `postgres_admin`.
 
-Each app owns its own Flyway migrations and schema. PostgreSQL
-cross-database foreign keys are not assumed.
+Each app owns its own Flyway migrations and schema. Platform local development
+now has Flyway proven against `platform_dev`; Spring Boot 4 uses
+`spring-boot-flyway` plus `flyway-database-postgresql`, with migrations under
+`backend/src/main/resources/db/migration`. PostgreSQL cross-database foreign keys
+are not assumed.
 
 Cross-database person references are platform Person IDs by application
 contract rather than PostgreSQL foreign keys across separate databases.
@@ -489,6 +508,22 @@ their environment web network
 alanwilliams-backend
 ```
 
+Local Platform development uses the shared local PostgreSQL runtime with:
+
+``` text
+platform_dev -> platform_dev_app
+```
+
+The normal local Platform build/start command is:
+
+``` text
+docker compose --env-file ./backend/.env.local up -d --build
+```
+
+`backend/.env.local` supplies backend runtime datasource/Clerk variables. Maven
+GitHub Packages credentials used to fetch `alanwilliams-spring-security` remain
+BuildKit build secrets and are not runtime environment values.
+
 Cloudflared is attached to the Platform and Agenda test/prod web
 networks.
 
@@ -536,32 +571,55 @@ Compose build arguments into `Dockerfile.prod` before `npm run build`.
 GitHub Packages credentials are supplied to backend Docker builds with a
 BuildKit secret rather than being copied into the image.
 
-Local protected backend authentication is now proven end to end:
+Protected Platform authentication is now proven end to end in both local and
+deployed test environments:
 
 ``` text
 Clerk signed-in React client
 -> getToken()
 -> Authorization: Bearer <token>
+-> /platform/me
+-> Cloudflare path routing in deployed environments
 -> Platform Spring Security
 -> Clerk JWT validated locally
 -> ClerkPrincipal extracted from sub
--> GET /me
 -> 200 {"clerkUserId":"user_..."}
 ```
 
+Verified endpoints:
+
+``` text
+Local:         http://localhost:8081/platform/me
+Deployed test: https://api-test.alanwilliams.app/platform/me
+```
+
+Platform now owns `server.servlet.context-path=/platform`, matching Agenda's
+`/agenda` service-prefix pattern. Cloudflare routes `/platform/*` to the
+Platform backend and `/agenda/*` to the Agenda backend while preserving the
+request path.
+
 The Platform application owns CORS configuration for its frontend/backend
-boundary. Local browser preflight and authenticated requests are working.
-The shared `alanwilliams-spring-security` library remains responsible for
-generic Clerk JWT validation and principal extraction, not app-specific
-CORS or route policy.
+boundary. Local and deployed-test browser preflight/authenticated requests
+are working. The shared `alanwilliams-spring-security` library remains
+responsible for generic Clerk JWT validation and principal extraction, not
+app-specific CORS or route policy.
 
-The next authentication work is:
+The Platform Person persistence foundation is now implemented locally:
 
--   repeat the protected API proof through `test.alanwilliams.app` and the
-    deployed test API route
--   link authenticated Clerk users to Platform Person
+-   `V1__create_person.sql` is the first Platform Flyway migration
+-   local `platform_dev` uses least-privilege role `platform_dev_app`
+-   Flyway successfully created the `person` table in local PostgreSQL
+-   the Person schema includes required name, nullable notification email/timezone,
+    appearance mode, nullable unique Clerk user ID, status/merge metadata, and
+    timestamps
+
+The next authentication/identity work is:
+
+-   implement Java `AppearanceMode` and `PersonStatus` enums
+-   implement the Platform `Person` JPA entity and repository/service layer
+-   resolve/link authenticated Clerk users to Platform Person with explicit claim rules
 -   persist Platform profile and appearance settings
--   then integrate Agenda with the same identity contract
+-   then integrate Agenda with the same identity/invitation contract
 
 Verified:
 
@@ -579,11 +637,23 @@ Verified:
 -   Cloudflare connectivity for Agenda and Platform web networks
 -   Platform responsive shell/profile UI
 -   local Platform Docker development and backend database connectivity
+-   local `platform_dev -> platform_dev_app` least-privilege runtime connection
+-   Platform Flyway V1 execution and local `person` table creation
+-   Spring Boot 4 Flyway integration using `spring-boot-flyway` and
+    `flyway-database-postgresql`
+-   local Platform Compose runtime configuration loaded with
+    `docker compose --env-file ./backend/.env.local up -d --build`
 -   Clerk frontend integration with real sign-in/sign-out
 -   Clerk test deployment sign-in/sign-out at `test.alanwilliams.app`
 -   local protected Platform API call with a real Clerk JWT
--   local authenticated Clerk user ID principal extraction via `ClerkPrincipal`
--   local CORS preflight/authenticated browser request path
+-   deployed-test protected Platform API call through
+    `https://api-test.alanwilliams.app/platform/me` with a real Clerk JWT
+-   local and deployed-test authenticated Clerk user ID principal extraction
+    via `ClerkPrincipal`
+-   local and deployed-test CORS preflight/authenticated browser request path
+-   Cloudflare path routing for shared API hostnames using `/platform/*` and
+    `/agenda/*` service prefixes
+-   Platform Spring servlet context path `/platform`
 -   reusable `alanwilliams-spring-security` library consumed by Platform
 -   GitHub Packages publication/consumption for shared Maven libraries
 -   BuildKit secret delivery of Maven package credentials during Docker builds
@@ -598,24 +668,23 @@ Verified:
 
 Not yet implemented / proven:
 
--   protected Platform API call using a real Clerk JWT in the deployed test environment
 -   authenticated Clerk user-to-Platform Person resolution/linkage
--   persisted Platform Person/profile schema
+-   Java Platform Person entity/repository/service mapping and profile API behavior
 -   persisted global appearance preference and notification email
 -   Agenda-to-Platform identity integration
 -   production Clerk instance activation and production auth verification
 
 ## Near-Term Sequence
 
-1.  Repeat the protected Platform API Clerk JWT proof through the deployed
-    test environment (`test.alanwilliams.app` -> test Platform API route).
-2.  Implement Platform Person/profile persistence and Clerk linkage.
-3.  Persist global appearance preference and notification email.
-4.  Integrate Agenda with Platform identity and shared authentication.
-5.  Continue Agenda domain/schema migration.
-6.  Bring Budget/Finance into the same Platform/auth/identity/database
+1.  Implement Platform Person Java enums/entity/repository/service and authenticated
+    Clerk-to-Person resolution/linkage.
+2.  Evolve `/platform/me` from the Clerk-ID proof endpoint into the real
+    Person/profile endpoint and persist appearance/email/timezone preferences.
+3.  Integrate Agenda with Platform identity and shared authentication.
+4.  Continue Agenda domain/schema migration.
+5.  Bring Budget/Finance into the same Platform/auth/identity/database
     model.
-7.  Add future production databases to the appropriate backup policy
+6.  Add future production databases to the appropriate backup policy
     when each app goes live.
 
 ## Explicitly Deferred
