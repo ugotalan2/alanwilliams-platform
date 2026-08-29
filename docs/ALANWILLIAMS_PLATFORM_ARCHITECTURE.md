@@ -307,10 +307,10 @@ silently rewrite a stored preferred timezone. Domain events that have their own
 timezone semantics, such as a scheduled meeting, own that timezone independently
 of the Person preference.
 
-## Platform Person Suggested Shape
+## Platform Person Shape
 
-The final schema should be designed during implementation, but current
-conceptual fields are:
+The Platform Person persistence model is now implemented with the following
+canonical fields:
 
 ``` text
 person
@@ -328,9 +328,18 @@ person
 
 `SYSTEM` is the default appearance mode.
 
+Platform persists this model with JPA/Flyway. `Person` uses explicit domain
+mutation methods rather than broad entity setters; Lombok `@Getter` is the
+preferred entity convenience, while class-level `@Setter`, `@Data`, and
+general-purpose entity builders are avoided. Application/JPA lifecycle hooks
+own `created_at` / `updated_at` updates, while database defaults remain a
+fallback.
+
 The Platform notification email is independent from Clerk sign-in
 identity. It may initially be populated from Clerk but is independently
-editable afterward.
+editable afterward. Whether an individual app sends email is an app-specific
+notification preference; storing a Platform notification email does not itself
+opt a user into every app's email notifications.
 
 ### Contextual Display Names
 
@@ -353,6 +362,37 @@ Applications may allow members to request display-name changes while retaining
 admin approval over the effective organization/household-visible value.
 
 Do not put multi-context display-name overrides on Platform Person.
+
+## Platform Account / Profile API
+
+The authenticated Platform account API is rooted at `/platform/me`.
+
+Current behavior:
+
+``` text
+GET /platform/me
+-> resolve ClerkPrincipal.clerkUserId
+-> load linked Platform Person
+-> return Platform-owned profile DTO
+
+PATCH /platform/me
+-> update supplied Platform-owned profile fields
+-> return updated profile DTO
+```
+
+The API returns DTOs rather than exposing the JPA entity directly. Current
+self-service profile fields are canonical name, notification email, preferred
+IANA timezone, and global appearance mode.
+
+The account/controller layer lives under `com.alanwilliams.platform.account`;
+canonical Person domain/persistence remains under
+`com.alanwilliams.platform.person`. Generic Clerk JWT validation and
+`ClerkPrincipal` extraction remain in `alanwilliams-spring-security`.
+
+Clerk continues to own credential/security management. The Platform profile
+UI delegates sign-in methods, password/security settings, and active-session
+management to Clerk's user-profile/account UI rather than implementing
+credential management itself.
 
 ## Privacy / Discovery
 
@@ -1058,6 +1098,23 @@ Light
 Dark
 ```
 
+Appearance ownership is split deliberately:
+
+``` text
+Anonymous visitor
+-> ThemeProvider + localStorage own the local preference
+
+Authenticated user
+-> Platform Person.appearance_mode is the cross-device source of truth
+-> ThemeProvider/localStorage provide immediate local application/cache
+```
+
+The frontend loads `/platform/me` through a shared `ProfileProvider`. After an
+authenticated Person is loaded, the saved `appearanceMode` is applied to the
+shared `ThemeProvider`. Signed-in appearance changes update both local theme
+state and `PATCH /platform/me`; signed-out appearance changes remain local
+only.
+
 The shared dark theme uses a navy/blue-toned surface family rather than
 charcoal/black because it provides better contrast and visual
 compatibility with the BYU Royal Agenda identity.
@@ -1250,7 +1307,7 @@ intended source of truth for that boundary.
     runtime; running one app does not require running all other app
     containers.
 
--   Clerk owns authentication.
+-   Clerk owns authentication, credential/security management, recovery, and active sessions. Platform delegates account-security UI to Clerk rather than implementing passwords/MFA/passkeys/session management.
 
 -   Platform owns canonical Person.
 
@@ -1261,6 +1318,14 @@ intended source of truth for that boundary.
 
 -   Platform Person may store a nullable preferred IANA timezone; app/domain
     events own their own timezone semantics independently.
+
+-   Platform notification email is contact/delivery data, not an app-wide opt-in. Each app owns its own email-notification preferences.
+
+-   `/platform/me` is the authenticated Platform profile contract and returns DTOs rather than JPA entities.
+
+-   Frontend account/profile state is shared through `ProfileProvider`; Platform Person appearance is authoritative after sign-in while `localStorage` preserves immediate/anonymous theme preference.
+
+-   Platform Java persistence standardizes Lombok for boilerplate reduction, favoring `@Getter` on JPA entities and explicit domain mutation methods over broad setters/`@Data`.
 
 -   Email may discover an unclaimed Person but never silently establishes
     identity. Person claim/linking requires explicit confirmation and authenticated

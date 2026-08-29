@@ -865,6 +865,11 @@ body {
     position: relative;
 }
 
+.aw-profile-edit-hidden {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 /* ---------- Mobile header navigation ---------- */
 
 @media (max-width: 767.98px) {

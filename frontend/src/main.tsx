@@ -7,6 +7,7 @@ import './styles/tokens.css'
 import './styles/app.css'
 import App from './App'
 import { ThemeProvider } from './theme/ThemeProvider.tsx'
+import ProfileProvider from './pages/account/ProfileProvider'
 
 const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -18,7 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ClerkProvider publishableKey={clerkPublishableKey}>
             <ThemeProvider>
-                <App />
+                <ProfileProvider>
+                    <App />
+                </ProfileProvider>
             </ThemeProvider>
         </ClerkProvider>
     </React.StrictMode>,

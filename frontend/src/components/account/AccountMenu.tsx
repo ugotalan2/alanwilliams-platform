@@ -18,6 +18,8 @@ import {
 import { useTheme} from "../../theme/useTheme.ts";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from '@clerk/react'
+import { useProfile } from '../../pages/account/useProfile'
+import type { AppearanceMode } from '../../pages/account/Profile'
 
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
@@ -85,6 +87,8 @@ function AccountMenu() {
         setPreference,
     } = useTheme()
 
+    const { updateProfile } = useProfile()
+
     const appearanceIcon =
         preference === 'system'
             ? faDesktop
@@ -98,6 +102,31 @@ function AccountMenu() {
             : preference === 'light'
                 ? 'Light'
                 : 'Dark'
+
+    async function changeAppearance(
+        newPreference: 'system' | 'light' | 'dark',
+        appearanceMode: AppearanceMode,
+    ) {
+        const previousPreference = preference
+
+        // Apply immediately and persist locally.
+        setPreference(newPreference)
+        setAppearanceOpen(false)
+
+        try {
+            await updateProfile({
+                appearanceMode,
+            })
+        } catch (err) {
+            // Keep local and Platform preference consistent.
+            setPreference(previousPreference)
+
+            console.error(
+                'Unable to save appearance preference',
+                err,
+            )
+        }
+    }
 
     useEffect(() => {
         const toggleElement = dropdownToggleRef.current
@@ -188,8 +217,10 @@ function AccountMenu() {
                                 icon={faDesktop}
                                 selected={preference === 'system'}
                                 onSelect={() => {
-                                    setPreference('system')
-                                    setAppearanceOpen(false)
+                                    void changeAppearance(
+                                        'system',
+                                        'SYSTEM',
+                                    )
                                 }}
                             />
 
@@ -198,8 +229,10 @@ function AccountMenu() {
                                 icon={faSun}
                                 selected={preference === 'light'}
                                 onSelect={() => {
-                                    setPreference('light')
-                                    setAppearanceOpen(false)
+                                    void changeAppearance(
+                                        'light',
+                                        'LIGHT',
+                                    )
                                 }}
                             />
 
@@ -208,8 +241,10 @@ function AccountMenu() {
                                 icon={faMoon}
                                 selected={preference === 'dark'}
                                 onSelect={() => {
-                                    setPreference('dark')
-                                    setAppearanceOpen(false)
+                                    void changeAppearance(
+                                        'dark',
+                                        'DARK',
+                                    )
                                 }}
                             />
                         </div>

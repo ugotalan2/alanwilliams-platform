@@ -110,9 +110,10 @@ Person
 - status / merge metadata
 ```
 
-The notification email is Platform-owned and is where AlanWilliams Apps
-notifications are sent. Changing it does not change Clerk sign-in
-identity.
+The notification email is Platform-owned contact/delivery data. Changing it
+does not change Clerk sign-in identity. Whether Agenda or another app actually
+sends email is controlled by that app's own notification settings rather than
+by the existence of a Platform notification email.
 
 
 ### Account Claim Direction
@@ -421,15 +422,19 @@ Appearance moves into the Profile dropdown when signed in. The
 Appearance submenu shows the current System/Light/Dark icon/value and
 closes only its nested submenu when a selection is made.
 
-Profile page direction:
+Profile page implementation:
 
--   canonical name
--   notification email
--   account security
--   name/email use lightweight edit icons
--   security uses an explicit Manage Security action
--   Clerk remains responsible for sign-in methods, passwords/passkeys,
-    MFA, and sessions
+-   canonical name with inline edit/save
+-   notification email with inline edit/save
+-   preferred IANA timezone with inline selection/save
+-   global System/Light/Dark appearance preference
+-   shared `ProfileProvider` loads and updates `/platform/me` once for account UI
+-   signed-in appearance changes persist to Platform Person and local theme state
+-   signed-out appearance remains a local `localStorage` preference
+-   Account Security uses an explicit Manage Security action that opens Clerk's
+    account/security UI
+-   Clerk remains responsible for sign-in methods, password/security settings,
+    MFA/passkeys when enabled, recovery, and active sessions
 
 Mobile-first behavior has been tested on an actual phone as well as
 browser responsive mode.
@@ -571,19 +576,20 @@ Compose build arguments into `Dockerfile.prod` before `npm run build`.
 GitHub Packages credentials are supplied to backend Docker builds with a
 BuildKit secret rather than being copied into the image.
 
-Protected Platform authentication is now proven end to end in both local and
-deployed test environments:
+Protected Platform authentication is proven end to end in both local and
+deployed test environments. Locally, `/platform/me` has now evolved into the
+real Person/profile API:
 
 ``` text
 Clerk signed-in React client
 -> getToken()
 -> Authorization: Bearer <token>
 -> /platform/me
--> Cloudflare path routing in deployed environments
 -> Platform Spring Security
 -> Clerk JWT validated locally
 -> ClerkPrincipal extracted from sub
--> 200 {"clerkUserId":"user_..."}
+-> linked Platform Person resolved by clerk_user_id
+-> profile DTO returned / updated
 ```
 
 Verified endpoints:
@@ -604,22 +610,35 @@ are working. The shared `alanwilliams-spring-security` library remains
 responsible for generic Clerk JWT validation and principal extraction, not
 app-specific CORS or route policy.
 
-The Platform Person persistence foundation is now implemented locally:
+The Platform Person/profile foundation is now implemented locally:
 
 -   `V1__create_person.sql` is the first Platform Flyway migration
 -   local `platform_dev` uses least-privilege role `platform_dev_app`
 -   Flyway successfully created the `person` table in local PostgreSQL
--   the Person schema includes required name, nullable notification email/timezone,
-    appearance mode, nullable unique Clerk user ID, status/merge metadata, and
-    timestamps
+-   Java `AppearanceMode` / `PersonStatus`, `Person` JPA entity, repository, and
+    service layer are implemented
+-   Person audit timestamps are maintained through JPA lifecycle callbacks
+-   Lombok is standardized for Java boilerplate reduction; JPA entities favor
+    `@Getter` plus explicit domain mutation methods
+-   authenticated `/platform/me` GET/PATCH resolves the linked Person and returns
+    profile DTOs
+-   canonical name, notification email, timezone, and appearance mode updates are
+    persisted
+-   frontend profile editing for name/email/timezone is working
+-   shared `ProfileProvider` owns loaded Person/profile state for account UI
+-   signed-in appearance changes persist to `Person.appearance_mode`; signed-out
+    appearance remains local via `localStorage`
+-   Manage Security delegates to Clerk's account/security UI
 
-The next authentication/identity work is:
+The next authentication/identity work is Person claim/link onboarding:
 
--   implement Java `AppearanceMode` and `PersonStatus` enums
--   implement the Platform `Person` JPA entity and repository/service layer
--   resolve/link authenticated Clerk users to Platform Person with explicit claim rules
--   persist Platform profile and appearance settings
--   then integrate Agenda with the same identity/invitation contract
+-   define the first-use flow after Clerk authentication
+-   when a valid invitation/claim token is present, explicitly confirm and link the
+    authenticated Clerk user to the pre-provisioned Person
+-   do not silently link by matching email alone
+-   when no invitation/claim exists, collect any required Platform profile data and
+    create a new canonical Person linked to the authenticated Clerk user
+-   then integrate Agenda invitations/memberships with the same Platform identity contract
 
 Verified:
 
@@ -639,6 +658,13 @@ Verified:
 -   local Platform Docker development and backend database connectivity
 -   local `platform_dev -> platform_dev_app` least-privilege runtime connection
 -   Platform Flyway V1 execution and local `person` table creation
+-   Platform Person enums/entity/repository/service implementation
+-   real authenticated `/platform/me` Person/profile GET/PATCH behavior locally
+-   inline Platform profile editing for name, notification email, and timezone
+-   shared frontend `ProfileProvider` for signed-in Person state
+-   persisted signed-in global appearance preference with anonymous/local fallback
+-   Clerk-managed account security launched from Platform profile
+-   Java 25 Lombok annotation processing configured explicitly in Maven
 -   Spring Boot 4 Flyway integration using `spring-boot-flyway` and
     `flyway-database-postgresql`
 -   local Platform Compose runtime configuration loaded with
@@ -668,24 +694,22 @@ Verified:
 
 Not yet implemented / proven:
 
--   authenticated Clerk user-to-Platform Person resolution/linkage
--   Java Platform Person entity/repository/service mapping and profile API behavior
--   persisted global appearance preference and notification email
+-   first-use Person creation and invitation-based claim/link workflow
+-   explicit atomic claim rules for linking a previously unclaimed Person to Clerk
 -   Agenda-to-Platform identity integration
 -   production Clerk instance activation and production auth verification
 
 ## Near-Term Sequence
 
-1.  Implement Platform Person Java enums/entity/repository/service and authenticated
-    Clerk-to-Person resolution/linkage.
-2.  Evolve `/platform/me` from the Clerk-ID proof endpoint into the real
-    Person/profile endpoint and persist appearance/email/timezone preferences.
-3.  Integrate Agenda with Platform identity and shared authentication.
+1.  Implement Platform first-use Person creation and explicit invitation/claim linking.
+2.  Add the onboarding UI needed to collect required Platform profile information
+    when an authenticated Clerk user has no linked Person. If an invitation/claim
+    token is present, resolve that claim privately and require explicit confirmation;
+    otherwise create a new canonical Person.
+3.  Integrate Agenda invitations/memberships with Platform identity and shared authentication.
 4.  Continue Agenda domain/schema migration.
-5.  Bring Budget/Finance into the same Platform/auth/identity/database
-    model.
-6.  Add future production databases to the appropriate backup policy
-    when each app goes live.
+5.  Bring Budget/Finance into the same Platform/auth/identity/database model.
+6.  Add future production databases to the appropriate backup policy when each app goes live.
 
 ## Explicitly Deferred
 
