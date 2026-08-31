@@ -3,40 +3,29 @@ package com.alanwilliams.platform.account;
 import com.alanwilliams.platform.person.Person;
 import com.alanwilliams.platform.person.PersonService;
 import com.alanwilliams.security.ClerkPrincipal;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.validation.Valid;
 
 @RestController
-public class MeController {
+public class PersonOnboardingController {
 
     private final PersonService personService;
 
-    public MeController(PersonService personService) {
+    public PersonOnboardingController(PersonService personService) {
         this.personService = personService;
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<MeResponse> me(
-            @AuthenticationPrincipal ClerkPrincipal principal
-    ) {
-        Person person = personService.getByClerkUserId(
-                principal.clerkUserId()
-        );
-
-        return ResponseEntity.ok(toResponse(person));
-    }
-
-    @PatchMapping("/me")
-    public ResponseEntity<MeResponse> updateMe(
+    @PostMapping("/onboarding/create")
+    public ResponseEntity<MeResponse> create(
             @AuthenticationPrincipal ClerkPrincipal principal,
-            @Valid @RequestBody UpdateMeRequest request
+            @Valid @RequestBody CreatePersonRequest request
     ) {
-        Person person = personService.updateProfile(
+        Person person = personService.createAndLinkPerson(
                 principal.clerkUserId(),
                 request.name(),
                 request.notificationEmail(),
@@ -44,7 +33,9 @@ public class MeController {
                 request.appearanceMode()
         );
 
-        return ResponseEntity.ok(toResponse(person));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(toResponse(person));
     }
 
     private MeResponse toResponse(Person person) {
