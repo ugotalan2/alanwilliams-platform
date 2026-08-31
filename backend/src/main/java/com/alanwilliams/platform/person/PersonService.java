@@ -24,7 +24,33 @@ public class PersonService {
     @Transactional(readOnly = true)
     public Person getByClerkUserId(String clerkUserId) {
         return personRepository.findByClerkUserId(clerkUserId)
-                .orElseThrow(() -> new PersonNotFoundException(clerkUserId));
+                .orElseThrow(PersonNotFoundException::new);
+    }
+
+    @Transactional
+    public Person createAndLinkPerson(
+            String clerkUserId,
+            String name,
+            String notificationEmail,
+            String timeZone,
+            AppearanceMode appearanceMode
+    ) {
+        validateNameRequired(name);
+        validateTimeZone(timeZone);
+
+        if (personRepository.existsByClerkUserId(clerkUserId)) {
+            throw new PersonAlreadyLinkedException();
+        }
+
+        Person person = Person.createLinked(
+                clerkUserId,
+                name.trim(),
+                normalizeEmail(notificationEmail),
+                timeZone,
+                appearanceMode
+        );
+
+        return personRepository.save(person);
     }
 
     @Transactional
@@ -66,5 +92,19 @@ public class PersonService {
         } catch (DateTimeException ex) {
             throw new IllegalArgumentException("Invalid time zone: " + timeZone);
         }
+    }
+
+    private void validateNameRequired(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name must not be blank");
+        }
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+
+        return email.trim();
     }
 }

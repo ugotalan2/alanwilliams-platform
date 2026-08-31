@@ -95,7 +95,7 @@ function PublicHeader() {
                                             icon={faRightToBracket}
                                             className="me-2"
                                         />
-                                        Sign In
+                                        Sign In / Sign Up
                                     </button>
                                 </>
                             )

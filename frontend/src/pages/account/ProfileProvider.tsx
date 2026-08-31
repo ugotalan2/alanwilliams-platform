@@ -13,6 +13,13 @@ type ProfileProviderProps = {
     children: ReactNode
 }
 
+type ProfileCreates = {
+    name: string
+    notificationEmail?: string
+    timeZone?: string
+    appearanceMode?: AppearanceMode
+}
+
 type ProfileUpdates = Partial<{
     name: string
     notificationEmail: string
@@ -40,6 +47,7 @@ function ProfileProvider({ children }: ProfileProviderProps) {
     const [profile, setProfile] = useState<Profile | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
     const loadProfile = useCallback(async () => {
         if (!isLoaded) {
@@ -48,6 +56,7 @@ function ProfileProvider({ children }: ProfileProviderProps) {
 
         if (!isSignedIn) {
             setProfile(null)
+            setNeedsOnboarding(false)
             setLoading(false)
             setError(null)
             return
@@ -71,8 +80,17 @@ function ProfileProvider({ children }: ProfileProviderProps) {
             if (!response.ok) {
                 const body = await response.json().catch(() => null)
 
+                if (
+                    response.status === 404 &&
+                    body?.code === 'PERSON_NOT_LINKED'
+                ) {
+                    setProfile(null)
+                    setNeedsOnboarding(true)
+                    return
+                }
+
                 throw new Error(
-                    body?.error ??
+                    body?.message ??
                     `Unable to load profile (${response.status})`
                 )
             }
@@ -80,6 +98,8 @@ function ProfileProvider({ children }: ProfileProviderProps) {
             const loadedProfile: Profile = await response.json()
 
             setProfile(loadedProfile)
+            setNeedsOnboarding(false)
+
             setPreference(
                 toThemePreference(loadedProfile.appearanceMode)
             )
@@ -98,6 +118,40 @@ function ProfileProvider({ children }: ProfileProviderProps) {
     useEffect(() => {
         void loadProfile()
     }, [loadProfile])
+
+    async function createProfile(
+        creates: ProfileCreates
+    ): Promise<Profile> {
+        const token = await getToken()
+
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/onboarding/create`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(creates),
+            }
+        )
+
+        if (!response.ok) {
+            const body = await response.json().catch(() => null)
+
+            throw new Error(
+                body?.message ??
+                `Unable to create profile (${response.status})`
+            )
+        }
+
+        const createdProfile: Profile = await response.json()
+
+        setProfile(createdProfile)
+        setNeedsOnboarding(false)
+
+        return createdProfile
+    }
 
     async function updateProfile(
         updates: ProfileUpdates
@@ -119,8 +173,20 @@ function ProfileProvider({ children }: ProfileProviderProps) {
         if (!response.ok) {
             const body = await response.json().catch(() => null)
 
+            if (
+                response.status === 404 &&
+                body?.code === 'PERSON_NOT_LINKED'
+            ) {
+                setProfile(null)
+                setNeedsOnboarding(true)
+
+                throw new Error(
+                    'Your Platform profile is no longer linked to this account.'
+                )
+            }
+
             throw new Error(
-                body?.error ??
+                body?.message ??
                 `Unable to update profile (${response.status})`
             )
         }
@@ -138,6 +204,8 @@ function ProfileProvider({ children }: ProfileProviderProps) {
                 profile,
                 loading,
                 error,
+                needsOnboarding,
+                createProfile,
                 updateProfile,
             }}
         >

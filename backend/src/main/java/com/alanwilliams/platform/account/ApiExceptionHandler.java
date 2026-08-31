@@ -1,47 +1,44 @@
 package com.alanwilliams.platform.account;
 
-import com.alanwilliams.platform.person.PersonNotFoundException;
+import com.alanwilliams.platform.error.ApiError;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Map;
-
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(PersonNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handlePersonNotFound(
-            PersonNotFoundException ex
-    ) {
-        return ResponseEntity.status(404).body(
-                Map.of("error", ex.getMessage())
-        );
-    }
-
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(
+    public ResponseEntity<ApiError> handleIllegalArgument(
             IllegalArgumentException ex
     ) {
         return ResponseEntity.badRequest().body(
-                Map.of("error", ex.getMessage())
+                new ApiError(
+                        "INVALID_REQUEST",
+                        ex.getMessage()
+                )
         );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(
+    public ResponseEntity<ApiError> handleValidation(
             MethodArgumentNotValidException ex
     ) {
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .findFirst()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error ->
+                        error.getField() + ": " + error.getDefaultMessage()
+                )
                 .orElse("Invalid request");
 
         return ResponseEntity.badRequest().body(
-                Map.of("error", message)
+                new ApiError(
+                        "VALIDATION_ERROR",
+                        message
+                )
         );
     }
 }

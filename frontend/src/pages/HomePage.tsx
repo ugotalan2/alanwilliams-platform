@@ -44,7 +44,7 @@ function HomePage() {
                                         className="btn aw-btn-secondary btn-lg"
                                         onClick={() => openSignIn()}
                                     >
-                                        Sign In
+                                        Sign In / Sign Up
                                     </button>
                                 )}
                             </div>

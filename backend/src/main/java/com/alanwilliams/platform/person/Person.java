@@ -63,6 +63,25 @@ public class Person {
         this.name = name;
     }
 
+    public static Person createLinked(
+            String clerkUserId,
+            String name,
+            String notificationEmail,
+            String timeZone,
+            AppearanceMode appearanceMode
+    ) {
+        Person person = new Person();
+
+        person.clerkUserId = clerkUserId;
+        person.name = name;
+        person.notificationEmail = notificationEmail;
+        person.timeZone = timeZone;
+        person.appearanceMode = appearanceMode != null ? appearanceMode : AppearanceMode.SYSTEM;
+        person.status = PersonStatus.ACTIVE;
+
+        return person;
+    }
+
     public void updateProfile(
             String name,
             String notificationEmail,
