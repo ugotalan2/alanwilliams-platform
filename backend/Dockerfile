@@ -3,15 +3,17 @@ FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
 COPY .mvn .mvn
-COPY mvnw pom.xml ./
+COPY mvnw pom.xml settings.xml ./
 
 RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline
 
 COPY src src
 
-RUN ./mvnw clean package -DskipTests
-
+RUN --mount=type=cache,target=/root/.m2/repository \
+    --mount=type=secret,id=github_token \
+    GITHUB_TOKEN="$(cat /run/secrets/github_token)" \
+    GITHUB_ACTOR=ugotalan2 \
+    ./mvnw -s settings.xml clean package -DskipTests
 
 FROM eclipse-temurin:25-jre
 

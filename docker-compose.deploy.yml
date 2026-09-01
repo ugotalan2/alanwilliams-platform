@@ -3,6 +3,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_API_URL: ${VITE_API_URL}
 
     restart: unless-stopped
 
@@ -13,6 +16,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      secrets:
+        - github_token
 
     restart: unless-stopped
 
@@ -20,6 +25,9 @@ services:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+      CLERK_ISSUER: ${CLERK_ISSUER}
+      CLERK_AUTHORIZED_PARTIES: ${CLERK_AUTHORIZED_PARTIES}
 
     networks:
       - web
@@ -31,3 +39,7 @@ networks:
 
   alanwilliams-backend:
     external: true
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

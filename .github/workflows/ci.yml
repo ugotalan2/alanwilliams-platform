@@ -10,6 +10,10 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: read
+
     services:
       postgres:
         image: postgres:17
@@ -30,10 +34,12 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
 
       - name: Make mvnw executable
         run: chmod +x backend/mvnw
@@ -41,10 +47,16 @@ jobs:
       - name: Run Backend Tests
         working-directory: ./backend
         env:
+          GITHUB_TOKEN: ${{ secrets.MAVEN_GITHUB_TOKEN }}
+          GITHUB_ACTOR: ugotalan2
+
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/platform_dev
           SPRING_DATASOURCE_USERNAME: postgres_admin
           SPRING_DATASOURCE_PASSWORD: test-password
-        run: ./mvnw test
+
+          CLERK_ISSUER: https://flexible-swan-3121.clerk.accounts.dev
+          CLERK_AUTHORIZED_PARTIES: http://localhost:5174
+        run: ./mvnw -s settings.xml test
 
   test-frontend:
     runs-on: ubuntu-latest
