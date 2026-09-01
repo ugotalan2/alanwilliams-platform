@@ -32,6 +32,8 @@
 
     --aw-shadow-sm:
             0 0.125rem 0.5rem rgba(0, 0, 0, 0.08);
+    --aw-shadow-md:
+            0 0.5rem 1.25rem rgba(0, 0, 0, 0.16);
 
     --aw-nav-bg: var(--aw-navy);
     --aw-nav-text: rgba(255, 255, 255, 0.78);
@@ -63,6 +65,8 @@
 
     --aw-shadow-sm:
             0 0.125rem 0.5rem rgba(0, 0, 0, 0.35);
+    --aw-shadow-md:
+            0 0.5rem 1.25rem rgba(0, 0, 0, 0.5);
 
     --aw-nav-bg: #243447;
     --aw-nav-text: rgba(255, 255, 255, 0.78);

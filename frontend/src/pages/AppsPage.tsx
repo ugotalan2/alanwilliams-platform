@@ -1,3 +1,6 @@
+// Reference-only page retained for app theme/layout experiments.
+// Not currently exposed through routing.
+
 import agendaIcon from '../styles/icons/agenda-icon.png'
 import budgetIcon from '../styles/icons/budget-icon.png'
 import choreIcon from '../styles/icons/chore-icon.png'
