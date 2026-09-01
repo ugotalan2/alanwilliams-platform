@@ -1,12 +1,12 @@
 import { createBrowserRouter } from 'react-router-dom'
 import PublicLayout from './components/layout/PublicLayout'
 import HomePage from './pages/HomePage'
-import AppsPage from './pages/AppsPage'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsOfServicePage from './pages/TermsOfServicePage'
 import MyProfilePage from './pages/account/MyProfilePage'
+import MyAppsPage from './pages/account/MyAppsPage'
 
 export const router = createBrowserRouter([
     {
@@ -15,10 +15,6 @@ export const router = createBrowserRouter([
             {
                 path: '/',
                 element: <HomePage />,
-            },
-            {
-                path: '/apps',
-                element: <AppsPage />,
             },
             {
                 path: '/about',
@@ -39,6 +35,10 @@ export const router = createBrowserRouter([
             {
                 path: '/account/profile',
                 element: <MyProfilePage />,
+            },
+            {
+                path: '/account/apps',
+                element: <MyAppsPage />,
             },
         ],
     },

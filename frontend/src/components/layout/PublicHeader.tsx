@@ -50,16 +50,6 @@ function PublicHeader() {
                 <div className="collapse navbar-collapse" id="publicNavbar">
                     <div className="navbar-nav aw-mobile-nav-row ms-auto align-items-center">
                         <NavLink
-                            to="/apps"
-                            data-label="Apps"
-                            className={({ isActive }) =>
-                                `nav-link ${isActive ? 'active' : ''}`
-                            }
-                        >
-                            Apps
-                        </NavLink>
-
-                        <NavLink
                             to="/about"
                             data-label="About"
                             className={({ isActive }) =>
