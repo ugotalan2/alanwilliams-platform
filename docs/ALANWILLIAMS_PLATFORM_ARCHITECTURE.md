@@ -128,9 +128,12 @@ Owns:
 -   global appearance preference
 -   notification/contact email
 -   identity reconciliation and merge
+-   Platform onboarding and Person creation/claim enforcement
 -   platform/account API
+-   app catalog identity/routing/status metadata 
+-   per-Person launcher preferences
 -   `alanwilliams.app` launcher/account frontend
--   cross-app identity/application metadata as needed
+-   cross-app identity contracts
 
 ### `alanwilliams-agenda`
 
@@ -152,6 +155,17 @@ Will own:
 -   household memberships and contextual display names where applicable
 -   Budget authorization/settings
 -   Budget database/migrations/deployment
+
+
+## Application repositories
+
+Agenda, Budget, Chores, Fitness, and future apps own their domain data,
+memberships, roles, contextual display names, permissions, notification
+settings, workflows, databases, migrations, and deployment.
+
+Application invitations are app-owned. Platform participates only where
+canonical Person creation or Person-to-Clerk claiming/linking is
+required.
 
 ### `alanwilliams-database`
 
@@ -184,6 +198,10 @@ started, stopped, or redeployed without owning the database runtime
 lifecycle.
 
 ### `alanwilliams-spring-security`
+
+Reusable Java library, not a deployed auth service. It owns generic
+Clerk JWT validation/principal extraction and reusable Spring Security
+integration. Consumer applications own route authorization and CORS.
 
 Reusable Java library. It is not a deployed auth microservice.
 
@@ -362,6 +380,92 @@ Applications may allow members to request display-name changes while retaining
 admin approval over the effective organization/household-visible value.
 
 Do not put multi-context display-name overrides on Platform Person.
+
+## Person Creation and Onboarding
+
+``` text
+A successful Clerk authentication does not itself create a Platform
+Person.
+
+GET /platform/me is the canonical check after authentication:
+
+linked Clerk user -> 200 Platform profile
+
+authenticated Clerk user with no linked Person -> 404 with code
+PERSON_NOT_LINKED
+
+Normal first-use flow with no invitation:
+```
+
+### Clerk authentication
+
+``` text
+-> GET /platform/me
+-> PERSON_NOT_LINKED
+-> explicit Platform onboarding
+-> show current Clerk identity
+-> collect/edit Platform profile fields
+-> POST /platform/onboarding/create
+-> create Person + link Clerk user ID
+-> continue to My Apps for first-run configuration
+```
+
+### POST /platform/onboarding/create:
+```text
+-  requires authentication
+-  obtains Clerk user ID from ClerkPrincipal
+-  accepts name, notification email, timezone, and appearance mode
+-  never searches for or links another Person by email
+-  creates and links the new Person atomically
+-  returns 201 with the profile DTO
+-  repeated creation for an already-linked Clerk user returns
+    409 PERSON_ALREADY_LINKED
+-  database uniqueness on clerk_user_id remains the final race-condition authority
+-  the frontend passes the current pre-login appearance preference when 
+   creating the Person; backend defaults to SYSTEM only when omitted
+```
+
+The onboarding UI must provide a clear
+Not you? Sign out / switch account path.
+
+## Person Claim / Invitation Linking
+
+A Platform Person may exist before signup. Claiming is explicit and
+atomic.
+
+### Rules:
+
+```text
+-  email is not an identity key and must never silently link a Person
+-  one Clerk user -> one Person
+-  one Person -> at most one Clerk user
+-  an active Clerk session never automatically accepts an invitation or
+   claims a Person
+-  confirmation identifies the currently signed-in account and provides
+   Not me / switch-account
+-  once linked, the account owner controls canonical Platform name and
+   notification email
+-  removing an app membership never deletes the Platform Person or
+   Clerk linkage
+```
+
+Invitation lifecycle belongs to the application that issued it.
+
+### Example Agenda flow:
+
+```text
+https://agenda.alanwilliams.app/invite/<opaque-token>
+-> Agenda validates invitation/membership/expiration
+-> authentication as needed
+-> Platform claim/create path if no linked Person
+-> explicit confirmation
+-> Agenda accepts membership
+```
+
+There is no generic Platform invitation table.
+
+An invitation route must bypass generic self-service Person creation
+until the invitation's claim/create decision is resolved.
 
 ## Platform Account / Profile API
 
@@ -1404,3 +1508,351 @@ intended source of truth for that boundary.
 
 -   One ChatGPT Project can hold the ecosystem docs so cross-repo
     context remains available.
+
+App Catalog
+
+Platform owns a small static application catalog for app identity and
+reachability metadata.
+
+Current conceptual catalog fields:
+
+appKey
+name
+subdomain
+status
+
+Current app keys:
+
+platform
+agenda
+budget
+chores
+fitness
+
+Java/database enum values may remain uppercase internally, but the
+external API contract uses lowercase app keys.
+
+Current statuses:
+
+AVAILABLE
+COMING_SOON
+
+Current catalog direction:
+
+platform -> AVAILABLE
+agenda   -> AVAILABLE
+budget   -> COMING_SOON
+chores   -> COMING_SOON
+fitness  -> COMING_SOON
+
+Public Catalog API
+
+GET /platform/apps
+
+This endpoint is public/read-only and does not require Clerk
+authentication.
+
+The servlet context is /platform, so Spring Security matches the route
+as GET /apps.
+
+The public catalog is used by the Platform homepage for discovery. It is
+distinct from Person-specific /platform/account/apps.
+
+Catalog Ownership Split
+
+Backend catalog owns:
+
+app identity/key
+
+display name
+
+subdomain identity
+
+availability/status
+
+Frontend owns:
+
+icon assets
+
+marketing descriptions
+
+theme/color
+
+visual presentation
+
+Environment-specific absolute URLs are not stored in the backend
+catalog.
+
+Environment-Aware Cross-App URLs
+
+Cross-app navigation resolves the catalog subdomain in the browser
+according to the current environment.
+
+Local frontend ports:
+
+Platform -> 5174
+Agenda   -> 5173
+
+Local backend ports:
+
+Platform -> 8081
+Agenda   -> 8080
+
+URL resolution contract:
+
+local/private LAN:
+preserve current hostname
+platform -> :5174
+agenda   -> :5173
+
+test:
+platform -> https://test.alanwilliams.app
+agenda   -> https://agenda-test.alanwilliams.app
+other app -> https://<subdomain>-test.alanwilliams.app
+
+production:
+platform -> https://alanwilliams.app
+app      -> https://<subdomain>.alanwilliams.app
+
+Unknown environments must fail closed. The resolver must never use
+production as a fallback.
+
+This preserves local/test/prod data isolation during cross-app
+navigation.
+
+Person App Preferences / My Apps
+
+Flyway V2 adds person_app_preference.
+
+Conceptual fields:
+
+id
+person_id
+app_key
+enabled
+sort_order
+is_default
+created_at
+updated_at
+
+Constraints:
+
+unique (person_id, app_key)
+
+at most one is_default = true row per Person
+
+nonnegative sort order
+
+Authenticated API:
+
+GET   /platform/account/apps
+PATCH /platform/account/apps/{appKey}/enabled
+PATCH /platform/account/apps/{appKey}/default
+PATCH /platform/account/apps/order
+
+Mutation endpoints return the full updated effective state so the
+frontend can honor server-side effects.
+
+Preference Semantics
+
+My Apps is a launcher/navigation preference. It is not authorization.
+
+app memberships/roles remain app-owned
+
+Platform is the implicit default initially
+
+only one default/star exists at a time
+
+Platform does not need to be enabled to remain default
+
+starring a non-Platform app automatically enables it
+
+disabling the current non-Platform default falls back to Platform
+
+disabling a non-default app does not change the default
+
+Platform may be disabled in the switcher while remaining default
+
+invitation acceptance automatically enables the invited app
+
+invitation acceptance never silently changes the default
+
+My Apps displays only catalog apps whose status is AVAILABLE.
+COMING_SOON apps remain in the catalog but are hidden from the
+personal launcher until launch.
+
+My Apps UX
+
+Current behavior:
+
+checkbox = include/show app in cross-app switcher
+
+app name
+
+star = default destination after normal Platform sign-in
+
+drag handle at far right
+
+rows use each app's primary theme color
+
+immediate save; no Save button
+
+checkbox and star persist immediately
+
+drag reorders optimistically and persists once on drop
+
+failure restores server-confirmed state
+
+save status uses Saving…, brief ✓ Saved, or
+Couldn't save changes
+
+save status is announced with aria-live="polite"
+
+dnd-kit provides desktop and touch drag/drop
+
+--aw-shadow-md is a shared design token for stronger drag
+elevation
+
+Where to Next
+
+The My Apps page provides navigation after preference changes:
+
+Back appears only when a meaningful validated origin exists
+
+Continue goes to the current default app
+
+new-account onboarding has no synthetic Back action and should
+emphasize Continue
+
+mobile actions stack; desktop places Back left and Continue right
+
+Cross-domain return origins require an allowlisted contract before they
+are accepted. Arbitrary absolute returnTo URLs must never be allowed.
+
+Authentication Navigation Precedence
+
+Default app preference is a post-login destination, not a generic
+authenticated redirect.
+
+Never redirect simply because isSignedIn became true.
+
+After authentication:
+
+explicit validated returnTo, invitation, or requested route wins
+
+normal Platform sign-in with no explicit destination goes to the
+Person's default app
+
+already-authenticated direct navigation stays exactly where the user
+navigated
+
+Special cases:
+
+brand-new Person with no invitation -> My Apps first-run
+configuration
+
+invitation flow -> invitation destination wins; do not detour to My
+Apps
+
+already signed-in user visiting alanwilliams.app -> stay on
+Platform
+
+direct /account/apps -> stay on My Apps
+
+Public Platform Homepage
+
+The Platform root page is the public app discovery/front-door surface.
+
+Current design:
+
+prominent AlanWilliams Apps identity
+
+one Sign In / Sign Up entry point when signed out
+
+Available Apps section
+
+Coming Soon section
+
+cards are centered when a row contains fewer than three apps
+
+available app cards navigate directly to that app using the
+environment-aware URL resolver
+
+coming-soon cards are informational/non-navigable
+
+Platform itself is omitted from app cards because the visitor is
+already on Platform
+
+app card descriptions/icons remain frontend presentation metadata
+
+the old public Explore Apps navigation/page is retired from
+routing/navigation
+
+The old Apps page file is intentionally retained as a reference-only
+visual/theme experiment for future app shell work, especially when
+bringing Agenda into the shared Platform visual system.
+
+Deferred / Future Architecture
+
+App-Owned Invitation Integration
+
+Not yet implemented:
+
+Agenda invitation token flow
+
+Platform claim endpoint/contract used by Agenda
+
+atomic claim of a pre-provisioned Person from an app invitation
+
+Agenda membership acceptance after successful claim/link
+
+cross-domain return-to/origin contract between app profile menus and
+Platform
+
+Cross-App Switcher
+
+My Apps preference persistence is implemented, but the actual shared
+cross-app navigation/switcher still needs to consume those preferences
+in Platform and app shells.
+
+The switcher must use the same environment-aware URL resolver and must
+not treat launcher preferences as authorization.
+
+New-App Launch Promotion
+
+Future idea; do not implement yet.
+
+When a new app launches, normal sign-in may show at most one prospective
+app-discovery promo:
+
+existing users may become eligible for a newly launched app promo
+
+new users should not receive a backlog of historical promos
+
+at most one promo is shown per normal login
+
+dismiss/action marks it seen
+
+Try/Add may enable the app in My Apps
+
+it does not change the default unless the user explicitly chooses
+that
+
+invitation/explicit return destination takes precedence over promos
+
+a newly created Person should baseline current promo versions so old
+promos are not replayed
+
+A future implementation may add catalog promoVersion metadata plus
+per-Person/app promo state.
+
+Person Merge
+
+Distributed Person merge/reconciliation remains deferred until the
+cross-app coordination contract is designed.
+
+Documentation Ownership
+
+Cross-repository architecture decisions belong here. Repo-specific
+documents should consume these contracts without duplicating domain
+internals.

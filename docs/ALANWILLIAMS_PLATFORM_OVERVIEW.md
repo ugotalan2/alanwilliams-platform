@@ -640,7 +640,7 @@ The next authentication/identity work is Person claim/link onboarding:
     create a new canonical Person linked to the authenticated Clerk user
 -   then integrate Agenda invitations/memberships with the same Platform identity contract
 
-Verified:
+### Verified:
 
 -   Agenda test and production deployments
 -   Platform test and production frontend/backend deployments
@@ -671,12 +671,13 @@ Verified:
     `docker compose --env-file ./backend/.env.local up -d --build`
 -   Clerk frontend integration with real sign-in/sign-out
 -   Clerk test deployment sign-in/sign-out at `test.alanwilliams.app`
--   local protected Platform API call with a real Clerk JWT
+-   Clerk prod deployment sign-in/sign-out at `alanwilliams.app`
+-   local, test and prod protected Platform API call with a real Clerk JWT
 -   deployed-test protected Platform API call through
     `https://api-test.alanwilliams.app/platform/me` with a real Clerk JWT
 -   local and deployed-test authenticated Clerk user ID principal extraction
     via `ClerkPrincipal`
--   local and deployed-test CORS preflight/authenticated browser request path
+-   local and deployed-test/prod CORS preflight/authenticated browser request path
 -   Cloudflare path routing for shared API hostnames using `/platform/*` and
     `/agenda/*` service prefixes
 -   Platform Spring servlet context path `/platform`
@@ -691,25 +692,58 @@ Verified:
 -   manual Platform daily backup and Agenda/Platform weekly backup
     execution verified
 -   Agenda restore procedure previously proven
+-   Clerk sign-in/sign-up/sign-out 
+-   local, test, and production Clerk JWT validation
+-   production Clerk domain/configuration
+-   Platform /platform servlet context
+-   Cloudflare test and production API routing
+-   Person Flyway V1
+-   Person JPA/repository/service/profile DTOs
+-   /platform/me GET/PATCH
+-   ProfileProvider and inline profile editing
+-   persisted signed-in appearance
+-   explicit no-Person onboarding state
+-   POST /platform/onboarding/create
+-   full new-account onboarding locally/test/production
+-   Flyway V2 person_app_preference
+-   static app catalog
+-   lowercase external app-key contract
+-   public GET /platform/apps
+-   My Apps preference API
+-   enable/default/order semantics
+-   immediate-save My Apps UI
+-   touch/desktop drag reorder
+-   environment-aware app URL builder
+-   My Apps Continue navigation to local Agenda
+-   catalog-driven homepage Available/Coming Soon layout
+-   public Explore Apps page/navigation retirement direction
 
-Not yet implemented / proven:
+### Not yet implemented / proven:
 
 -   first-use Person creation and invitation-based claim/link workflow
 -   explicit atomic claim rules for linking a previously unclaimed Person to Clerk
 -   Agenda-to-Platform identity integration
 -   production Clerk instance activation and production auth verification
+-   actual signed-in cross-app app switcher using My Apps preferences
+-   final normal Platform sign-in redirect to starred/default app
+-   allowlisted cross-domain returnTo contract for profile/preferences
+    opened from Agenda or another app
+-   Agenda adoption of the shared Platform visual shell/theme patterns
 
 ## Near-Term Sequence
 
-1.  Implement Platform first-use Person creation and explicit invitation/claim linking.
-2.  Add the onboarding UI needed to collect required Platform profile information
-    when an authenticated Clerk user has no linked Person. If an invitation/claim
-    token is present, resolve that claim privately and require explicit confirmation;
-    otherwise create a new canonical Person.
-3.  Integrate Agenda invitations/memberships with Platform identity and shared authentication.
-4.  Continue Agenda domain/schema migration.
-5.  Bring Budget/Finance into the same Platform/auth/identity/database model.
-6.  Add future production databases to the appropriate backup policy when each app goes live.
+1. Push the current Platform launcher/catalog/homepage changes to dev
+   and verify them in the test environment.
+2. Finish the signed-in app switcher and normal post-login default-app
+   routing.
+3. Define the safe cross-domain return/origin contract used when
+   account/profile/My Apps is opened from Agenda.
+4. Begin Agenda invitation integration with Platform Person
+   claim/linking.
+5. Bring Agenda's shell/theme/navigation into the shared Platform
+   visual conventions while using the retained Apps reference page.
+6. Continue Agenda domain/schema migration after shared
+   identity/navigation integration is stable.
 
 ## Explicitly Deferred
 
@@ -720,3 +754,33 @@ Not yet implemented / proven:
 -   Native iOS/Android apps
 -   Automated SMS delivery
 -   Full Handbook mirroring/catalog synchronization
+-   new-app promo implementation
+-   arbitrary external returnTo URLs
+-   production fallback from unknown/local/test app URL resolution
+-   generic Platform invitation table
+
+## Agenda Invitation Integration
+
+- Agenda app-owned invitation URL/token flow
+- Platform claim endpoint/contract for pre-provisioned Persons
+- atomic Person claim from Agenda invitation
+- invitation confirmation/switch-account UI
+- Agenda membership acceptance after claim
+- invited-app auto-enable integration
+- optional Make Agenda my default app after sign-in choice
+
+## Future Idea: New-App Launch Promo
+
+Discussed but intentionally not implemented.
+
+### Desired future behavior:
+
+- at most one app-discovery promo per normal login
+- prospective only; new users do not receive old promo backlog
+- existing users may be eligible when a new app launches
+- dismiss/action marks promo seen
+- Try/Add may enable the app in My Apps
+- promo does not silently change the default
+- invitation or explicit return destination always wins
+- a future implementation may use catalog promoVersion plus
+  per-Person/app seen state
