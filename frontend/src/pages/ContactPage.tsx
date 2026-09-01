@@ -6,7 +6,14 @@ function ContactPage() {
                     <h1 className="fw-bold mb-3">Contact</h1>
 
                     <p className="aw-text-muted">
-                        Contact information and a simple message option will live here.
+                        Questions, support requests, or privacy inquiries regarding
+                        AlanWilliams Apps can be sent to:
+                    </p>
+
+                    <p>
+                        <a href="mailto:ugotalan@gmail.com">
+                            ugotalan@gmail.com
+                        </a>
                     </p>
                 </div>
             </div>
