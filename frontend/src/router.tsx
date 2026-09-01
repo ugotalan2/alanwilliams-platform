@@ -4,6 +4,8 @@ import HomePage from './pages/HomePage'
 import AppsPage from './pages/AppsPage'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
 import MyProfilePage from './pages/account/MyProfilePage'
 
 export const router = createBrowserRouter([
@@ -25,6 +27,14 @@ export const router = createBrowserRouter([
             {
                 path: '/contact',
                 element: <ContactPage />,
+            },
+            {
+                path: '/privacy',
+                element: <PrivacyPolicyPage />,
+            },
+            {
+                path: '/terms',
+                element: <TermsOfServicePage />,
             },
             {
                 path: '/account/profile',
