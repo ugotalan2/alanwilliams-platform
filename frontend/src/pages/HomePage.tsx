@@ -13,13 +13,13 @@ function HomePage() {
                 <div className="container">
                     <div className="row align-items-center justify-content-center">
                         <div className="col-12 col-lg-9 col-xl-8 text-center">
-              <span className="badge aw-badge mb-3">
-                AlanWilliams Apps
-              </span>
-
                             <h1 className="display-4 fw-bold mb-3">
-                                One account. Connected apps.
+                                AlanWilliams Apps
                             </h1>
+
+                            <p className="h3 fw-semibold mb-3">
+                                One account. Connected apps.
+                            </p>
 
                             <p className="lead aw-text-muted mb-4 mx-auto aw-hero-copy">
                                 Simple tools for meetings, budgets, household organization,
