@@ -820,6 +820,47 @@ Package/authentication rules:
     provides reusable Clerk JWT validation and principal extraction, not
     app-specific authorization policy.
 
+## Shared Frontend Library Distribution
+
+Reusable AlanWilliams frontend design and component code is owned by the
+separate `alanwilliams-ui` repository and distributed as a versioned npm
+package through GitHub Packages.
+
+Canonical package:
+
+```text
+@alanwilliams/ui
+```
+
+The package is the frontend counterpart to `alanwilliams-spring-security`:
+a reusable build-time library rather than a deployed service.
+
+`alanwilliams-ui` owns shared frontend presentation primitives including:
+
+- semantic design tokens and common CSS
+- light/dark appearance rendering mechanics
+- app visual themes and shared app/brand assets
+- reusable application shell/header components
+- reusable account-menu presentation
+- reusable desktop and mobile navigation presentation
+- shared responsive and accessibility behavior
+
+Platform remains the owner of canonical Person/profile data, appearance
+preference persistence, My Apps preferences, onboarding, identity contracts,
+and environment-aware cross-app routing rules. Individual applications remain
+the owners of their route definitions, navigation choices, domain pages,
+memberships, authorization, and workflows.
+
+Applications consume an explicit `@alanwilliams/ui` version at build time and
+bundle the shared code/assets into their own deployment. They must not depend on
+runtime delivery of shared CSS or JavaScript from `alanwilliams.app`.
+
+Initial migration order is Platform first, then Agenda. Platform is the reference
+implementation used to verify the extraction without visual regression; Agenda
+is the second consumer used to prove the public API is genuinely reusable.
+
+Detailed package internals belong in `ALANWILLIAMS_UI_ARCHITECTURE.md`.
+
 ## Clerk Deployment Configuration
 
 Clerk frontend and backend configuration use different delivery paths.

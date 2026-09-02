@@ -4,7 +4,11 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci
+RUN --mount=type=secret,id=github_token \
+        TOKEN="$(cat /run/secrets/github_token)" && \
+        printf "@ugotalan2:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=%s\n" "$TOKEN" > /root/.npmrc && \
+        npm ci && \
+        rm -f /root/.npmrc
 
 COPY . .
 

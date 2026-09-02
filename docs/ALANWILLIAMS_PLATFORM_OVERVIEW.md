@@ -532,6 +532,36 @@ BuildKit build secrets and are not runtime environment values.
 Cloudflared is attached to the Platform and Agenda test/prod web
 networks.
 
+## Shared Frontend Package
+
+Shared frontend design-system code now has a dedicated repository:
+
+```text
+alanwilliams-ui
+```
+
+It publishes the versioned npm package:
+
+```text
+@alanwilliams/ui
+```
+
+The package centralizes shared semantic tokens, common CSS, app themes, approved
+app icons/brand assets, and reusable shell/header/navigation/account-menu
+presentation. It is consumed at build time by independently deployable apps; it
+is not a hosted UI service.
+
+Ownership remains intentionally split:
+
+```text
+alanwilliams-ui -> reusable presentation and interaction primitives
+Platform        -> Person/profile, appearance persistence, My Apps, identity
+Apps            -> routes, domain UI, memberships, authorization, workflows
+```
+
+Platform is the first consumer/reference implementation. Agenda is the second
+consumer used to prove the shared API before future apps adopt it.
+
 ## Shared Java Library Delivery
 
 Reusable Java libraries are versioned Maven artifacts published through

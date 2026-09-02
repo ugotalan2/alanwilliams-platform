@@ -3,7 +3,7 @@ import { useAuth, useClerk } from '@clerk/react'
 
 import agendaIcon from '../styles/icons/agenda-icon.png'
 import budgetIcon from '../styles/icons/budget-icon.png'
-import choreIcon from '../styles/icons/chore-icon.png'
+import choreIcon from '../styles/icons/chores-icon.png'
 import fitnessIcon from '../styles/icons/fitness-icon.png'
 
 import {
