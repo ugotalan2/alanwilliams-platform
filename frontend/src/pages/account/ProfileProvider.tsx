@@ -7,7 +7,7 @@ import {
 import { useAuth } from '@clerk/react'
 import { ProfileContext } from './ProfileContext'
 import type { AppearanceMode, Profile } from './Profile'
-import { useTheme } from '../../theme/useTheme'
+import { useTheme } from '@ugotalan2/ui'
 
 type ProfileProviderProps = {
     children: ReactNode

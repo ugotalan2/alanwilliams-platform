@@ -1,6 +1,6 @@
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faDesktop, faMoon, faSun} from "@fortawesome/free-solid-svg-icons";
-import {useTheme} from "../../theme/useTheme.ts";
+import {useTheme} from '@ugotalan2/ui'
 
 function AppearanceMenu() {
 

@@ -15,8 +15,8 @@ import {
     buildReturnTo,
     withReturnTo,
 } from '../../utils/returnTo'
-import { useTheme} from "../../theme/useTheme.ts";
-import { useEffect, useRef, useState } from "react";
+import { useTheme} from '@ugotalan2/ui'
+import { useEffect, useRef, useState } from "react"
 import { useAuth } from '@clerk/react'
 import { useProfile } from '../../pages/account/useProfile'
 import type { AppearanceMode } from '../../pages/account/Profile'

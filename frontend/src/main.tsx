@@ -6,7 +6,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import '@ugotalan2/ui/styles.css'
 import './styles/platform.css'
 import App from './App'
-import { ThemeProvider } from './theme/ThemeProvider.tsx'
+import { ThemeProvider } from '@ugotalan2/ui'
 import ProfileProvider from './pages/account/ProfileProvider'
 import OnboardingGate from "./pages/account/OnboardingGate.tsx";
 

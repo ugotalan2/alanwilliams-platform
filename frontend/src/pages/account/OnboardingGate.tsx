@@ -6,7 +6,7 @@ import {
 } from 'react'
 import { useAuth, useClerk, useUser } from '@clerk/react'
 import { useProfile } from './useProfile'
-import { useTheme } from '../../theme/useTheme'
+import { useTheme } from '@ugotalan2/ui'
 import type { AppearanceMode } from './Profile'
 
 type OnboardingGateProps = {

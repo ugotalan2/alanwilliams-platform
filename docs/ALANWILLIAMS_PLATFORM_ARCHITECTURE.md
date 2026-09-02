@@ -718,9 +718,11 @@ docker compose --env-file ./backend/.env.local up -d --build
 ```
 
 The environment file supplies runtime configuration such as datasource and Clerk
-settings. Maven/GitHub Packages credentials remain build-only credentials and are
-provided separately through BuildKit secrets rather than being stored as runtime
-environment values or baked into the image.
+settings. GitHub Packages credentials may also be sourced by Compose from the
+local env file, but Maven/npm package credentials remain build-only: Compose
+passes them to Docker builds as BuildKit secrets, they are mounted only for the
+dependency-install step, and they are not exposed as frontend runtime variables
+or baked into the image.
 
 Running Platform does not require Agenda containers to be running and
 vice versa.
@@ -829,7 +831,7 @@ package through GitHub Packages.
 Canonical package:
 
 ```text
-@alanwilliams/ui
+@ugotalan2/ui
 ```
 
 The package is the frontend counterpart to `alanwilliams-spring-security`:
@@ -851,9 +853,30 @@ and environment-aware cross-app routing rules. Individual applications remain
 the owners of their route definitions, navigation choices, domain pages,
 memberships, authorization, and workflows.
 
-Applications consume an explicit `@alanwilliams/ui` version at build time and
+Applications consume an explicit `@ugotalan2/ui` version at build time and
 bundle the shared code/assets into their own deployment. They must not depend on
 runtime delivery of shared CSS or JavaScript from `alanwilliams.app`.
+
+Current proven package flow:
+
+```text
+alanwilliams-ui
+-> GitHub Actions publishes @ugotalan2/ui
+-> GitHub npm Packages
+-> Platform frontend Docker build
+-> npm ci installs pinned package version
+-> Vite bundles shared CSS/assets into Platform
+```
+
+Publishing uses the UI repository `GITHUB_TOKEN` with `packages: write`.
+Cross-repository consumption uses GitHub Packages read credentials. Docker
+consumer builds pass the credential with a BuildKit secret; the npm auth config
+is temporary and must not remain in the image.
+
+Platform first proved this flow with `@ugotalan2/ui@0.1.0`. Shared tokens, base
+styles, themes, common components CSS, and approved icons come from the package.
+Platform-owned My Profile, My Apps, and temporary preview page styles remain
+local to Platform.
 
 Initial migration order is Platform first, then Agenda. Platform is the reference
 implementation used to verify the extraction without visual regression; Agenda
@@ -1495,9 +1518,12 @@ intended source of truth for that boundary.
 -   Reusable AlanWilliams Java libraries are published as Maven artifacts
     through GitHub Packages rather than copied into consumer repositories.
 
--   Cross-repository Maven package consumption uses authenticated GitHub
+-   Cross-repository Maven and npm package consumption uses authenticated GitHub
     Packages access; consumer build credentials are passed to Docker with
     BuildKit secrets and are not included in runtime images.
+
+-   Shared frontend CSS/assets are published as `@ugotalan2/ui`; Platform is the
+    first proven consumer and keeps Platform-only page styling local.
 
 -   Consumer applications own their `SecurityFilterChain`, route-level
     authorization, and CORS policy; the shared security library owns generic
