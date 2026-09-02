@@ -4,7 +4,7 @@ import { faRightToBracket, } from '@fortawesome/free-solid-svg-icons'
 import alanWilliamsIcon from '../../styles/icons/alanwilliams-icon.png'
 import alanWilliamsIconDark from '../../styles/icons/alanwilliams-icon-white.png'
 import AccountMenu from '../account/AccountMenu'
-import AppearanceMenu from "../account/AppearanceMenu.tsx";
+import { AppearanceMenu } from '@ugotalan2/ui'
 import { useAuth, useClerk } from '@clerk/react'
 
 function PublicHeader() {
