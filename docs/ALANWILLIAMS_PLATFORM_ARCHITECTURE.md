@@ -837,25 +837,92 @@ Canonical package:
 The package is the frontend counterpart to `alanwilliams-spring-security`:
 a reusable build-time library rather than a deployed service.
 
-`alanwilliams-ui` owns shared frontend presentation primitives including:
+Canonical package:
 
-- semantic design tokens and common CSS
-- light/dark appearance rendering mechanics
-- app visual themes and shared app/brand assets
-- reusable application shell/header components
-- reusable account-menu presentation
-- reusable desktop and mobile navigation presentation
-- shared responsive and accessibility behavior
+``` text
+@ugotalan2/ui
+```
 
-Platform remains the owner of canonical Person/profile data, appearance
-preference persistence, My Apps preferences, onboarding, identity contracts,
-and environment-aware cross-app routing rules. Individual applications remain
-the owners of their route definitions, navigation choices, domain pages,
-memberships, authorization, and workflows.
+Current proven version: `0.5.1`.
 
-Applications consume an explicit `@ugotalan2/ui` version at build time and
-bundle the shared code/assets into their own deployment. They must not depend on
-runtime delivery of shared CSS or JavaScript from `alanwilliams.app`.
+It owns: - semantic tokens/common CSS - SYSTEM/LIGHT/DARK rendering
+mechanics - app themes/assets - ThemeProvider - account/appearance
+presentation - sticky shared header - footer - authenticated AppShell -
+sticky desktop side-navigation presentation - fixed mobile
+bottom-navigation presentation - shared responsive/accessibility
+behavior
+
+It does not own: - Clerk state - Person/Profile/My Apps persistence -
+app routes - app permissions - app domain workflows
+
+Platform remains the first compatibility consumer; Agenda is second.
+
+### App Identity Contract
+
+App theme classes set:
+
+``` text
+--app-primary
+```
+
+Current identities:
+
+``` text
+Platform -> navy
+Agenda   -> BYU Royal Blue
+Budget   -> green
+Chores   -> gold
+Fitness  -> dark red
+```
+
+Shared side/bottom app navigation and primary app actions use
+`--app-primary` directly. Universal nav text/hover/active values are
+shared semantic tokens.
+
+Top/header navigation remains on the shared surface and uses the shared
+header highlight behavior rather than inheriting the app-colored
+side/bottom surface.
+
+### App Navigation Contract
+
+Each app computes one ordered, authorized `AppNavItem[]` and passes it
+to shared `AppShell`.
+
+Desktop: - render all supplied items - sticky side nav below sticky
+header - independent side-nav overflow scrolling
+
+Mobile: - 1-5 items: all visible - \>5: first 4 + generated More -
+overflow is remaining ordered items - fixed bottom nav - standards-based
+safe-area support - shell reserves matching bottom clearance
+
+The UI package never determines authorization. Backend enforcement
+remains authoritative.
+
+Footer legal/support destinations remain footer content, not app-nav
+overflow.
+
+## App Catalog / My Apps
+
+Platform owns static app identity/status metadata and per-Person
+launcher preferences.
+
+My Apps is navigation preference, never authorization.
+
+External app keys are lowercase. AVAILABLE apps participate in personal
+launcher behavior; COMING_SOON apps remain catalog metadata until
+launch.
+
+Cross-app URL resolution is environment aware and must fail closed for
+unknown environments.
+
+## Authentication Navigation Precedence
+
+Explicit validated destination/invitation wins. Normal Platform sign-in
+without an explicit destination may use the Person's default app.
+Already-authenticated direct navigation stays where the user navigated.
+
+Arbitrary external `returnTo` URLs are forbidden; cross-domain origins
+require an allowlisted contract.
 
 Current proven package flow:
 
@@ -872,15 +939,6 @@ Publishing uses the UI repository `GITHUB_TOKEN` with `packages: write`.
 Cross-repository consumption uses GitHub Packages read credentials. Docker
 consumer builds pass the credential with a BuildKit secret; the npm auth config
 is temporary and must not remain in the image.
-
-Platform first proved this flow with `@ugotalan2/ui@0.1.0`. Shared tokens, base
-styles, themes, common components CSS, and approved icons come from the package.
-Platform-owned My Profile, My Apps, and temporary preview page styles remain
-local to Platform.
-
-Initial migration order is Platform first, then Agenda. Platform is the reference
-implementation used to verify the extraction without visual regression; Agenda
-is the second consumer used to prove the public API is genuinely reusable.
 
 Detailed package internals belong in `ALANWILLIAMS_UI_ARCHITECTURE.md`.
 
@@ -1923,3 +1981,18 @@ Documentation Ownership
 Cross-repository architecture decisions belong here. Repo-specific
 documents should consume these contracts without duplicating domain
 internals.
+
+## Current Cross-Repo Decisions
+
+-   Clerk authentication + Platform canonical Person
+-   no silent email linking
+-   explicit invitation confirmation and account switching
+-   app-owned contextual display names and authorization
+-   shared PostgreSQL runtime with separate app DBs
+-   GitHub Packages for shared Maven/npm libraries
+-   BuildKit secrets for package credentials
+-   Platform `/platform`, Agenda `/agenda`
+-   shared `@ugotalan2/ui@0.5.1` contract proven on Platform
+-   shared shell/nav presentation is UI-package owned
+-   app auth/permission filtering and route definitions remain app-owned
+-   Agenda is next shared-UI consumer
