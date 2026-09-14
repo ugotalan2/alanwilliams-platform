@@ -9,6 +9,8 @@ import { useProfile } from './useProfile'
 import { useTheme } from '@ugotalan2/ui'
 import type { AppearanceMode } from './Profile'
 
+import { getValidatedPlatformReturnTo } from '../../utils/platformReturnTo'
+
 type OnboardingGateProps = {
     children: ReactNode
 }
@@ -38,6 +40,10 @@ function OnboardingGate({ children }: OnboardingGateProps) {
         needsOnboarding,
         createProfile,
     } = useProfile()
+
+    const returnTo = getValidatedPlatformReturnTo(
+        new URLSearchParams(window.location.search).get('returnTo'),
+    )
 
     const [name, setName] = useState('')
     const [notificationEmail, setNotificationEmail] = useState('')
@@ -97,6 +103,13 @@ function OnboardingGate({ children }: OnboardingGateProps) {
                 timeZone,
                 appearanceMode: toAppearanceMode(preference),
             })
+
+            await user?.reload()
+            await clerk.session?.reload()
+
+            if (returnTo) {
+                window.location.replace(returnTo)
+            }
         } catch (err) {
             setSubmitError(
                 err instanceof Error
