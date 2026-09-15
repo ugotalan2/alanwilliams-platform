@@ -1,5 +1,6 @@
 package com.alanwilliams.platform.account;
 
+import com.alanwilliams.platform.clerk.ClerkIdentityService;
 import com.alanwilliams.platform.person.Person;
 import com.alanwilliams.platform.person.PersonService;
 import com.alanwilliams.security.ClerkPrincipal;
@@ -15,9 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class PersonOnboardingController {
 
     private final PersonService personService;
+    private final ClerkIdentityService clerkIdentityService;
 
-    public PersonOnboardingController(PersonService personService) {
+    public PersonOnboardingController(
+            PersonService personService,
+            ClerkIdentityService clerkIdentityService
+    ) {
         this.personService = personService;
+        this.clerkIdentityService = clerkIdentityService;
     }
 
     @PostMapping("/onboarding/create")
@@ -31,6 +37,11 @@ public class PersonOnboardingController {
                 request.notificationEmail(),
                 request.timeZone(),
                 request.appearanceMode()
+        );
+
+        clerkIdentityService.syncPlatformPersonId(
+                principal.clerkUserId(),
+                person.getId()
         );
 
         return ResponseEntity

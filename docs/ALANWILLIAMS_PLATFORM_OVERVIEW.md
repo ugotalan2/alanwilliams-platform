@@ -532,6 +532,44 @@ BuildKit build secrets and are not runtime environment values.
 Cloudflared is attached to the Platform and Agenda test/prod web
 networks.
 
+## Shared UI
+
+Reusable frontend presentation is owned by `alanwilliams-ui` and
+published as:
+
+``` text
+@ugotalan2/ui
+```
+
+Current proven shared package version: `0.5.1`.
+
+Platform is the first proven consumer. Shared UI now supplies
+tokens/themes/icons, theme mechanics, account/appearance presentation,
+sticky header, footer, `AppShell`, sticky desktop side navigation, and
+fixed mobile bottom navigation.
+
+Platform supplies `aw-theme-platform`, causing shared app-navigation
+surfaces to resolve through Platform's `--app-primary` navy.
+
+Platform still owns: - public/signed-in layout decisions - Clerk
+state/handlers - `ProfileProvider` - `/platform/me` - My Apps - route
+definitions - Platform-only pages - persisted appearance
+
+The UI package does not own those behaviors.
+
+## Shared Navigation Behavior
+
+Consuming apps provide an ordered `AppNavItem[]`. Desktop renders all
+supplied items in a sticky independently scrollable side nav. Mobile
+renders up to five slots; more than five becomes first four plus
+generated `More`. Mobile safe-area space is filled by the same
+app-primary color and shell content reserves matching clearance.
+
+Footer legal/support content remains separate from app navigation.
+
+Platform is the first consumer/reference implementation. Agenda is the second
+consumer used to prove the shared API before future apps adopt it.
+
 ## Shared Java Library Delivery
 
 Reusable Java libraries are versioned Maven artifacts published through
@@ -717,6 +755,8 @@ The next authentication/identity work is Person claim/link onboarding:
 -   My Apps Continue navigation to local Agenda
 -   catalog-driven homepage Available/Coming Soon layout
 -   public Explore Apps page/navigation retirement direction
+-   shared npm UI package consumption - `@ugotalan2/ui@0.5.1`
+    shell/navigation behavior verified on Platform
 
 ### Not yet implemented / proven:
 
@@ -732,8 +772,10 @@ The next authentication/identity work is Person claim/link onboarding:
 
 ## Near-Term Sequence
 
-1. Push the current Platform launcher/catalog/homepage changes to dev
-   and verify them in the test environment.
+1. Next cross-app work: 1. adopt the shared UI shell in Agenda 2. complete
+Agenda-to-Platform Person invitation/claim integration 3. complete
+signed-in cross-app switcher/default routing and safe return-origin
+contract
 2. Finish the signed-in app switcher and normal post-login default-app
    routing.
 3. Define the safe cross-domain return/origin contract used when

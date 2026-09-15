@@ -242,11 +242,13 @@ Clerk owns:
 -   password/passkey/MFA/social sign-in
 -   account recovery
 -   active sessions
+-   delivery of the signed session JWT used by AlanWilliams APIs
 
 Platform owns:
 
 -   canonical Person
--   Clerk user linkage
+-   authoritative Clerk user-to-Person linkage
+-   synchronization of the linked Platform Person ID into Clerk public metadata
 -   canonical/default name
 -   notification/contact email
 -   preferred IANA timezone
@@ -286,6 +288,41 @@ Rule:
 Changing email must not create a new Person or rewrite historical
 relationships.
 
+### Clerk Identity Projection
+
+The Platform database is authoritative for the Clerk-user-to-Person link. Clerk
+metadata and JWT claims are a replicated identity projection used so downstream
+apps can authorize requests without calling Platform on every request.
+
+``` text
+Platform person.clerk_user_id + person.id
+-> Clerk public_metadata.platform_person_id
+-> Clerk session JWT platform_person_id claim
+-> alanwilliams-spring-security ClerkPrincipal.platformPersonId()
+-> application authorization
+```
+
+Locked rules:
+
+-   `person.clerk_user_id` in Platform remains the source of truth for the link.
+-   Platform writes the linked Person ID to Clerk public metadata as
+    `platform_person_id`.
+-   Clerk session-token customization projects that value into the top-level JWT
+    claim `platform_person_id`.
+-   The shared security library extracts the claim but does not own Person
+    resolution, creation, linking, or synchronization.
+-   `platform_person_id` may be absent/null for a valid Clerk user who has not yet
+    linked a Platform Person or whose identity projection has not yet synchronized.
+-   Downstream apps must reject Person-required operations when the claim is
+    absent rather than inventing a local identity.
+-   The JWT contains only stable identity needed broadly by apps; profile,
+    appearance, app catalog, memberships, roles, and other mutable domain data do
+    not belong in the token.
+-   Metadata synchronization is idempotent and retryable. Clerk metadata is not a
+    second canonical Person store.
+
+Platform uses Clerk's backend API with the server-only `CLERK_SECRET_KEY` to
+synchronize the projection. The secret must never be exposed to a frontend.
 
 ### Person Claim / Account Linking
 
@@ -416,14 +453,23 @@ Normal first-use flow with no invitation:
 -  obtains Clerk user ID from ClerkPrincipal
 -  accepts name, notification email, timezone, and appearance mode
 -  never searches for or links another Person by email
--  creates and links the new Person atomically
--  returns 201 with the profile DTO
+-  creates and links the new Person atomically in Platform
+-  after Platform persistence succeeds, attempts to synchronize person.id into
+   Clerk public metadata as platform_person_id
+-  returns 201 with the profile DTO when the create/sync path succeeds
 -  repeated creation for an already-linked Clerk user returns
-    409 PERSON_ALREADY_LINKED
+   409 PERSON_ALREADY_LINKED
 -  database uniqueness on clerk_user_id remains the final race-condition authority
--  the frontend passes the current pre-login appearance preference when 
+-  the frontend passes the current pre-login appearance preference when
    creating the Person; backend defaults to SYSTEM only when omitted
 ```
+
+The Platform Person transaction is intentionally not rolled back when the later
+Clerk metadata synchronization fails. A failed Clerk update is an identity
+projection/synchronization failure, not a failed Person creation. The Person
+remains linked to the authenticated Clerk user in Platform and the synchronization
+may be retried safely. A retry/recovery path must reuse the existing Person rather
+than attempting to create a duplicate.
 
 The onboarding UI must provide a clear
 Not you? Sign out / switch account path.
@@ -542,7 +588,7 @@ Browser / React app
 -> Authorization: Bearer <token>
 -> target Java API
 -> local Spring Security JWT validation
--> Clerk user ID principal
+-> ClerkPrincipal(clerkUserId, platformPersonId)
 -> app/platform logic
 ```
 
@@ -556,9 +602,11 @@ Agenda request -> Platform auth request -> Clerk -> Agenda
 
 for every API call.
 
-When an app needs canonical Person resolution, it uses the Platform
-identity contract rather than re-implementing independent Person
-creation.
+For normal authenticated app requests, the stable Platform Person ID is carried in
+the validated JWT as `platform_person_id`, so apps do not call Platform merely to
+resolve Clerk user ID to Person ID. When an app needs canonical Person data,
+onboarding/claim behavior, reconciliation, or another Platform-owned identity
+operation, it uses the Platform contract rather than re-implementing Person logic.
 
 ## Environment Isolation
 
@@ -798,9 +846,10 @@ inside consumer repositories.
 Current shared library:
 
 ``` text
-com.alanwilliams:alanwilliams-spring-security
+com.alanwilliams:alanwilliams-spring-security:0.2.0-SNAPSHOT
 -> GitHub Packages
--> consumed by alanwilliams-platform and future Java backends
+-> consumed by alanwilliams-platform and alanwilliams-agenda
+-> ClerkPrincipal exposes clerkUserId and nullable platformPersonId
 ```
 
 Package/authentication rules:
@@ -819,6 +868,126 @@ Package/authentication rules:
     `SecurityFilterChain` and route authorization. The shared library
     provides reusable Clerk JWT validation and principal extraction, not
     app-specific authorization policy.
+
+## Shared Frontend Library Distribution
+
+Reusable AlanWilliams frontend design and component code is owned by the
+separate `alanwilliams-ui` repository and distributed as a versioned npm
+package through GitHub Packages.
+
+Canonical package:
+
+```text
+@ugotalan2/ui
+```
+
+The package is the frontend counterpart to `alanwilliams-spring-security`:
+a reusable build-time library rather than a deployed service.
+
+Canonical package:
+
+``` text
+@ugotalan2/ui
+```
+
+Current proven version: `0.5.1`.
+
+It owns: - semantic tokens/common CSS - SYSTEM/LIGHT/DARK rendering
+mechanics - app themes/assets - ThemeProvider - account/appearance
+presentation - sticky shared header - footer - authenticated AppShell -
+sticky desktop side-navigation presentation - fixed mobile
+bottom-navigation presentation - shared responsive/accessibility
+behavior
+
+It does not own: - Clerk state - Person/Profile/My Apps persistence -
+app routes - app permissions - app domain workflows
+
+Platform remains the first compatibility consumer; Agenda is second.
+
+### App Identity Contract
+
+App theme classes set:
+
+``` text
+--app-primary
+```
+
+Current identities:
+
+``` text
+Platform -> navy
+Agenda   -> BYU Royal Blue
+Budget   -> green
+Chores   -> gold
+Fitness  -> dark red
+```
+
+Shared side/bottom app navigation and primary app actions use
+`--app-primary` directly. Universal nav text/hover/active values are
+shared semantic tokens.
+
+Top/header navigation remains on the shared surface and uses the shared
+header highlight behavior rather than inheriting the app-colored
+side/bottom surface.
+
+### App Navigation Contract
+
+Each app computes one ordered, authorized `AppNavItem[]` and passes it
+to shared `AppShell`.
+
+Desktop: - render all supplied items - sticky side nav below sticky
+header - independent side-nav overflow scrolling
+
+Mobile: - 1-5 items: all visible - \>5: first 4 + generated More -
+overflow is remaining ordered items - fixed bottom nav - standards-based
+safe-area support - shell reserves matching bottom clearance
+
+The UI package never determines authorization. Backend enforcement
+remains authoritative.
+
+Footer legal/support destinations remain footer content, not app-nav
+overflow.
+
+## App Catalog / My Apps
+
+Platform owns static app identity/status metadata and per-Person
+launcher preferences.
+
+My Apps is navigation preference, never authorization.
+
+External app keys are lowercase. AVAILABLE apps participate in personal
+launcher behavior; COMING_SOON apps remain catalog metadata until
+launch.
+
+Cross-app URL resolution is environment aware and must fail closed for
+unknown environments.
+
+## Authentication Navigation Precedence
+
+Explicit validated destination/invitation wins. Normal Platform sign-in
+without an explicit destination may use the Person's default app.
+Already-authenticated direct navigation stays where the user navigated.
+
+Arbitrary external `returnTo` URLs are forbidden; cross-domain origins
+require an allowlisted contract.
+
+Current proven package flow:
+
+```text
+alanwilliams-ui
+-> GitHub Actions publishes @ugotalan2/ui
+-> GitHub npm Packages
+-> Platform frontend Docker build
+-> npm ci installs pinned package version
+-> Vite bundles shared CSS/assets into Platform
+```
+
+Publishing uses the UI repository `GITHUB_TOKEN` with `packages: write`.
+Cross-repository consumption uses GitHub Packages read credentials. Docker
+consumer builds pass the credential with a BuildKit secret; the npm auth config
+is temporary and must not remain in the image.
+
+Detailed package internals belong in `ALANWILLIAMS_UI_ARCHITECTURE.md`.
 
 ## Clerk Deployment Configuration
 
@@ -1454,9 +1623,12 @@ intended source of truth for that boundary.
 -   Reusable AlanWilliams Java libraries are published as Maven artifacts
     through GitHub Packages rather than copied into consumer repositories.
 
--   Cross-repository Maven package consumption uses authenticated GitHub
+-   Cross-repository Maven and npm package consumption uses authenticated GitHub
     Packages access; consumer build credentials are passed to Docker with
     BuildKit secrets and are not included in runtime images.
+
+-   Shared frontend CSS/assets are published as `@ugotalan2/ui`; Platform is the
+    first proven consumer and keeps Platform-only page styling local.
 
 -   Consumer applications own their `SecurityFilterChain`, route-level
     authorization, and CORS policy; the shared security library owns generic
@@ -1856,3 +2028,18 @@ Documentation Ownership
 Cross-repository architecture decisions belong here. Repo-specific
 documents should consume these contracts without duplicating domain
 internals.
+
+## Current Cross-Repo Decisions
+
+-   Clerk authentication + Platform canonical Person
+-   no silent email linking
+-   explicit invitation confirmation and account switching
+-   app-owned contextual display names and authorization
+-   shared PostgreSQL runtime with separate app DBs
+-   GitHub Packages for shared Maven/npm libraries
+-   BuildKit secrets for package credentials
+-   Platform `/platform`, Agenda `/agenda`
+-   shared `@ugotalan2/ui@0.5.1` contract proven on Platform
+-   shared shell/nav presentation is UI-package owned
+-   app auth/permission filtering and route definitions remain app-owned
+-   Agenda is next shared-UI consumer
