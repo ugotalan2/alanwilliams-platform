@@ -6,6 +6,8 @@ services:
       args:
         VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
         VITE_API_URL: ${VITE_API_URL}
+      secrets:
+        - github_token
 
     restart: unless-stopped
 
@@ -28,6 +30,7 @@ services:
 
       CLERK_ISSUER: ${CLERK_ISSUER}
       CLERK_AUTHORIZED_PARTIES: ${CLERK_AUTHORIZED_PARTIES}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
 
     networks:
       - web
