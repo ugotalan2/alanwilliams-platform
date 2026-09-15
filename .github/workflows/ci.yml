@@ -56,6 +56,7 @@ jobs:
 
           CLERK_ISSUER: https://flexible-swan-3121.clerk.accounts.dev
           CLERK_AUTHORIZED_PARTIES: http://localhost:5174
+          CLERK_SECRET_KEY: test-clerk-secret-key
         run: ./mvnw -s settings.xml test
 
   test-frontend:
