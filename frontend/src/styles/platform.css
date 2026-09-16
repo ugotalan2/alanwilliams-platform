@@ -1,0 +1,636 @@
+/* ---------- My Profile ---------- */
+
+.aw-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.aw-profile-info {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.aw-profile-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    color: var(--aw-text);
+}
+
+.aw-profile-action {
+    flex-shrink: 0;
+}
+
+.aw-profile-edit {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border: 0;
+    background: transparent;
+    color: var(--aw-text-muted);
+
+    font-size: 1rem;
+
+    transition: color 150ms ease;
+}
+
+.aw-profile-edit:hover,
+.aw-profile-edit:focus-visible {
+    color: var(--aw-accent-highlight);
+}
+
+.aw-profile-editable-row {
+    position: relative;
+}
+
+.aw-profile-edit-hidden {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ---------- My Profile mobile ---------- */
+
+@media (max-width: 575.98px) {
+    .aw-profile-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .aw-profile-info {
+        width: 100%;
+    }
+
+    .aw-profile-action {
+        width: 100%;
+    }
+
+    .aw-profile-editable-row {
+        position: relative;
+    }
+
+    .aw-profile-editable-row .aw-profile-info {
+        padding-right: 2.75rem;
+    }
+
+    .aw-profile-edit {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+}
+
+/* ---------- My Apps ---------- */
+
+.aw-my-apps-panel {
+    width: 100%;
+    max-width: 40rem;
+    margin: 0 auto;
+
+    padding: 1.5rem;
+
+    background: var(--aw-surface-raised);
+    border: 1px solid var(--aw-border);
+    border-radius: var(--aw-radius-lg);
+    box-shadow: var(--aw-shadow-sm);
+}
+
+.aw-my-apps-list {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.aw-my-app-row {
+    min-height: 3rem;
+
+    display: grid;
+    grid-template-columns:
+        2.25rem
+        minmax(0, 1fr)
+        2.25rem
+        2.25rem;
+
+    align-items: center;
+    column-gap: 0.5rem;
+
+    padding: 0.35rem 0.75rem;
+
+    background: var(--app-primary);
+    color: #ffffff;
+
+    border-radius: var(--aw-radius-md);
+    box-shadow: var(--aw-shadow-sm);
+}
+
+.aw-my-app-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+
+    justify-self: center;
+
+    accent-color: #ffffff;
+    cursor: pointer;
+}
+
+.aw-my-app-name {
+    min-width: 0;
+
+    font-weight: 600;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aw-my-app-star,
+.aw-my-app-drag {
+    width: 2.25rem;
+    height: 2.25rem;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+}
+
+.aw-my-app-star {
+    border: 0;
+    border-radius: var(--aw-radius-sm);
+
+    background: transparent;
+    color: #ffffff;
+
+    font-size: 1.2rem;
+    cursor: pointer;
+
+    transition: background-color 150ms ease;
+}
+
+.aw-my-app-star:hover,
+.aw-my-app-star:focus-visible {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.aw-my-app-star-icon {
+    color: transparent;
+    stroke: #ffffff;
+    stroke-width: 30;
+}
+
+.aw-my-app-star-icon.selected {
+    color: #ffffff;
+    stroke: #ffffff;
+}
+
+.aw-my-app-drag {
+    border: 0;
+    background: transparent;
+
+    color: rgba(255, 255, 255, 0.72);
+
+    font-size: 1.1rem;
+    cursor: grab;
+
+    touch-action: none;
+}
+
+.aw-my-app-drag:active {
+    cursor: grabbing;
+}
+
+.aw-my-app-row.dragging {
+    opacity: 0.8;
+    box-shadow: var(--aw-shadow-md);
+}
+
+.aw-my-apps-save-status {
+    min-height: 1.5rem;
+    margin-top: 1rem;
+
+    color: var(--aw-text-muted);
+
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.aw-my-apps-save-status:empty {
+    visibility: hidden;
+}
+
+.aw-my-apps-next {
+    margin-top: 1rem;
+    padding-top: 1.25rem;
+
+    border-top: 1px solid var(--aw-border);
+}
+
+.aw-my-apps-next-actions {
+    margin-top: 1rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.aw-my-apps-continue {
+    margin-left: auto;
+}
+
+@media (max-width: 575.98px) {
+    .aw-my-apps-panel {
+        padding: 1rem;
+    }
+
+    .aw-my-apps-list {
+        gap: 0.5rem;
+    }
+
+    .aw-my-app-row {
+        grid-template-columns:
+            1.75rem
+            minmax(0, 1fr)
+            2.25rem
+            2.25rem;
+
+        column-gap: 0.35rem;
+
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .aw-my-app-star,
+    .aw-my-app-drag {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+
+    .aw-my-apps-next-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .aw-my-apps-next-actions .btn {
+        width: 100%;
+    }
+
+    .aw-my-apps-continue {
+        margin-left: 0;
+    }
+}
+
+/* =========================================================
+   Temporary app theme preview
+   ========================================================= */
+
+.aw-theme-preview {
+    --app-primary: var(--aw-navy);
+
+    position: relative;
+
+    width: 100%;
+    height: 36rem;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    background: var(--aw-surface);
+    border: 1px solid var(--aw-border);
+    border-radius: var(--aw-radius-lg);
+}
+
+/* ---------- Preview header ---------- */
+
+.aw-theme-preview-header {
+    position: relative;
+    z-index: 3;
+
+    flex-shrink: 0;
+    min-height: 4rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    padding: 0.625rem 1rem;
+
+    background: var(--aw-surface);
+    color: var(--aw-text);
+
+    border-bottom: 1px solid var(--aw-border);
+}
+
+/* ---------- Preview logo ---------- */
+
+.aw-theme-preview-logo-container {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.aw-theme-preview-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ---------- Preview top navigation ---------- */
+
+.aw-preview-top-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.aw-preview-top-nav-item {
+    display: inline-grid;
+    justify-items: center;
+
+    padding: 0.4rem 0.65rem;
+
+    border: 0;
+    border-radius: var(--aw-radius-sm);
+
+    background: transparent;
+    color: var(--aw-text);
+
+    font-size: 0.875rem;
+    font-weight: 400;
+
+    transition: color 150ms ease;
+}
+
+.aw-preview-top-nav-item::after {
+    content: attr(data-label);
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 700;
+}
+
+.aw-preview-top-nav-item:hover {
+    color: var(--app-primary);
+    font-weight: 600;
+}
+
+.aw-preview-top-nav-item.active {
+    color: var(--app-primary);
+    font-weight: 700;
+}
+
+/* ---------- Preview Sign In ---------- */
+
+.aw-preview-sign-in {
+    background: var(--app-primary);
+    border: 2px solid var(--app-primary);
+    color: #ffffff;
+
+    transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            color 150ms ease;
+}
+
+.aw-preview-sign-in:hover,
+.aw-preview-sign-in:focus-visible {
+    background: #ffffff;
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+}
+
+[data-aw-theme='dark'] .aw-preview-sign-in:hover,
+[data-aw-theme='dark'] .aw-preview-sign-in:focus-visible {
+    border-color: #ffffff;
+}
+
+/* ---------- Preview shell ---------- */
+
+.aw-theme-preview-shell {
+    flex: 1;
+    min-height: 0;
+
+    display: flex;
+}
+
+/* ---------- Desktop side navigation ---------- */
+
+.aw-preview-side-nav {
+    width: 13rem;
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    overflow: hidden;
+
+    padding: 0.75rem;
+
+    background: var(--app-primary);
+}
+
+.aw-preview-side-nav-item {
+    width: 100%;
+    min-height: 2.75rem;
+
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    padding: 0.5rem 0.75rem;
+
+    border: 0;
+    border-radius: var(--aw-radius-sm);
+
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+
+    text-align: left;
+
+    transition:
+            color 150ms ease,
+            background-color 150ms ease;
+}
+
+.aw-preview-side-nav-item svg {
+    width: 1.25rem;
+    color: inherit;
+}
+
+.aw-preview-side-nav-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.aw-preview-side-nav-item.active {
+    background: #ffffff;
+    color: var(--app-primary);
+    font-weight: 600;
+}
+
+/* ---------- Preview page content ---------- */
+
+.aw-theme-preview-content {
+    min-width: 0;
+    flex: 1;
+
+    overflow-y: auto;
+
+    padding: 1.5rem;
+
+    background: var(--aw-surface);
+}
+
+/* ---------- Preview primary button ---------- */
+
+.aw-preview-btn-primary {
+    background: var(--app-primary);
+    border: 2px solid var(--app-primary);
+    color: #ffffff;
+
+    transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            color 150ms ease;
+}
+
+.aw-preview-btn-primary:hover,
+.aw-preview-btn-primary:focus-visible {
+    background: #ffffff;
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+}
+
+[data-aw-theme='dark'] .aw-preview-btn-primary:hover,
+[data-aw-theme='dark'] .aw-preview-btn-primary:focus-visible {
+    border-color: #ffffff;
+}
+
+/* ---------- Shared preview link ---------- */
+
+.aw-preview-link {
+    color: var(--aw-link);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.aw-preview-link:hover {
+    color: var(--aw-link-hover);
+    text-decoration: underline;
+}
+
+/* ---------- Shared preview tag ---------- */
+
+.aw-preview-tag {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 0.25rem 0.625rem;
+
+    background: var(--aw-tag-bg);
+    border: 1px solid var(--aw-tag-border);
+    border-radius: 999px;
+
+    color: var(--aw-tag-text);
+
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ---------- Mobile bottom navigation ---------- */
+
+.aw-preview-bottom-nav {
+    position: relative;
+    z-index: 3;
+
+    flex-shrink: 0;
+
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+
+    background: var(--app-primary);
+
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.aw-preview-bottom-nav-item {
+    min-height: 4rem;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+
+    border: 0;
+
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+
+    font-size: 0.75rem;
+
+    transition:
+            color 150ms ease,
+            background-color 150ms ease;
+}
+
+.aw-preview-bottom-nav-item svg {
+    font-size: 1.1rem;
+}
+
+.aw-preview-bottom-nav-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.aw-preview-bottom-nav-item.active {
+    background: #ffffff;
+    color: var(--app-primary);
+    font-weight: 600;
+}
+
+/* ---------- Preview responsive behavior ---------- */
+
+@media (max-width: 767.98px) {
+    .aw-theme-preview {
+        height: 34rem;
+    }
+
+    .aw-preview-side-nav {
+        display: none;
+    }
+
+    .aw-preview-bottom-nav {
+        display: grid;
+    }
+
+    .aw-preview-top-nav {
+        display: none;
+    }
+
+    .aw-theme-preview-content {
+        padding: 1rem;
+    }
+}
