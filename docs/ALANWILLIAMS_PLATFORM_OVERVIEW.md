@@ -532,40 +532,32 @@ BuildKit build secrets and are not runtime environment values.
 Cloudflared is attached to the Platform and Agenda test/prod web
 networks.
 
-## Shared UI
+## Shared Frontend Package
 
-Reusable frontend presentation is owned by `alanwilliams-ui` and
-published as:
+Shared frontend design-system code now has a dedicated repository:
 
-``` text
-@ugotalan2/ui
+```text
+alanwilliams-ui
 ```
 
-Current proven shared package version: `0.5.1`.
+It publishes the versioned npm package:
 
-Platform is the first proven consumer. Shared UI now supplies
-tokens/themes/icons, theme mechanics, account/appearance presentation,
-sticky header, footer, `AppShell`, sticky desktop side navigation, and
-fixed mobile bottom navigation.
+```text
+@alanwilliams/ui
+```
 
-Platform supplies `aw-theme-platform`, causing shared app-navigation
-surfaces to resolve through Platform's `--app-primary` navy.
+The package centralizes shared semantic tokens, common CSS, app themes, approved
+app icons/brand assets, and reusable shell/header/navigation/account-menu
+presentation. It is consumed at build time by independently deployable apps; it
+is not a hosted UI service.
 
-Platform still owns: - public/signed-in layout decisions - Clerk
-state/handlers - `ProfileProvider` - `/platform/me` - My Apps - route
-definitions - Platform-only pages - persisted appearance
+Ownership remains intentionally split:
 
-The UI package does not own those behaviors.
-
-## Shared Navigation Behavior
-
-Consuming apps provide an ordered `AppNavItem[]`. Desktop renders all
-supplied items in a sticky independently scrollable side nav. Mobile
-renders up to five slots; more than five becomes first four plus
-generated `More`. Mobile safe-area space is filled by the same
-app-primary color and shell content reserves matching clearance.
-
-Footer legal/support content remains separate from app navigation.
+```text
+alanwilliams-ui -> reusable presentation and interaction primitives
+Platform        -> Person/profile, appearance persistence, My Apps, identity
+Apps            -> routes, domain UI, memberships, authorization, workflows
+```
 
 Platform is the first consumer/reference implementation. Agenda is the second
 consumer used to prove the shared API before future apps adopt it.
@@ -755,8 +747,6 @@ The next authentication/identity work is Person claim/link onboarding:
 -   My Apps Continue navigation to local Agenda
 -   catalog-driven homepage Available/Coming Soon layout
 -   public Explore Apps page/navigation retirement direction
--   shared npm UI package consumption - `@ugotalan2/ui@0.5.1`
-    shell/navigation behavior verified on Platform
 
 ### Not yet implemented / proven:
 
@@ -772,10 +762,8 @@ The next authentication/identity work is Person claim/link onboarding:
 
 ## Near-Term Sequence
 
-1. Next cross-app work: 1. adopt the shared UI shell in Agenda 2. complete
-Agenda-to-Platform Person invitation/claim integration 3. complete
-signed-in cross-app switcher/default routing and safe return-origin
-contract
+1. Push the current Platform launcher/catalog/homepage changes to dev
+   and verify them in the test environment.
 2. Finish the signed-in app switcher and normal post-login default-app
    routing.
 3. Define the safe cross-domain return/origin contract used when
@@ -826,3 +814,50 @@ Discussed but intentionally not implemented.
 - invitation or explicit return destination always wins
 - a future implementation may use catalog promoVersion plus
   per-Person/app seen state
+
+## September 2026 Identity / Onboarding Milestone
+
+Platform Person onboarding is now proven end-to-end from a downstream app in
+both test and production.
+
+Current contract:
+
+``` text
+Clerk authentication
+-> downstream app sees JWT platform_person_id
+-> if missing, redirect to Platform /onboarding?returnTo=<app-origin>
+-> Platform GET /platform/me
+-> 404 PERSON_NOT_LINKED means show Person creation form
+-> POST /platform/onboarding/create
+-> create Platform Person
+-> write person.id to Clerk public_metadata.platform_person_id
+-> reload Clerk user/session
+-> replace navigation back to validated returnTo origin
+```
+
+`/onboarding` is an explicit routable Platform entry point for downstream
+applications. The existing `OnboardingGate` owns the Person-creation UI; the
+route exists so React Router does not reject the cross-app handoff before the
+gate can render.
+
+The return target is restricted to an explicit allowlist of AlanWilliams app
+origins for local/LAN, test, and production environments. Arbitrary external
+return URLs are not accepted.
+
+Environment isolation is now a locked operational rule:
+
+``` text
+LOCAL       -> original Clerk Development instance -> local Platform DB
+TEST        -> dedicated AlanWilliams Apps Test Clerk Development instance -> platform_test
+PRODUCTION  -> Clerk Production instance -> platform_prod
+```
+
+One Clerk environment/instance maps to one Platform Person database
+environment. When changing Clerk environments, existing Person rows and Clerk
+metadata must be reconciled or intentionally reset; stale Person rows without
+matching `public_metadata.platform_person_id` can otherwise cause an onboarding
+redirect loop.
+
+Only Platform owns the Clerk secret and writes Platform Person linkage into
+Clerk metadata. Downstream apps validate JWTs but do not modify Clerk users.
+

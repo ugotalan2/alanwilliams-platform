@@ -2039,7 +2039,89 @@ internals.
 -   GitHub Packages for shared Maven/npm libraries
 -   BuildKit secrets for package credentials
 -   Platform `/platform`, Agenda `/agenda`
--   shared `@ugotalan2/ui@0.5.1` contract proven on Platform
+-   shared `@ugotalan2/ui` contract proven on Platform and Agenda; Agenda baseline `0.5.7`
 -   shared shell/nav presentation is UI-package owned
 -   app auth/permission filtering and route definitions remain app-owned
 -   Agenda is next shared-UI consumer
+
+## Downstream-App Person Onboarding Contract
+
+A signed-in user may enter Agenda or another AlanWilliams app before a Platform
+Person has been created. Downstream apps must not create canonical Person data.
+They redirect to the Platform onboarding entry point instead:
+
+``` text
+https://<platform>/onboarding?returnTo=<requesting-app-origin>
+```
+
+The Platform router must explicitly recognize `/onboarding`. The global
+`OnboardingGate`, backed by `ProfileProvider`, remains responsible for deciding
+whether Person creation is required.
+
+For an authenticated Clerk user:
+
+``` text
+GET /platform/me
+200 -> Person already linked; normal Platform behavior
+404 PERSON_NOT_LINKED -> render Person creation form
+```
+
+Creation uses `POST /platform/onboarding/create`. A successful creation must:
+
+1. create the canonical Platform Person;
+2. link the current Clerk user ID to that Person;
+3. write the Person ID to Clerk `public_metadata.platform_person_id`;
+4. return the created profile;
+5. allow the frontend to reload Clerk user/session state; and
+6. navigate back to the validated requesting-app origin with
+   `window.location.replace(...)`.
+
+The `returnTo` value is origin-only and allowlisted. Current allowed app origins
+cover Agenda, Budget, Chores, and Fitness for localhost/LAN, test, and
+production. Platform must never redirect onboarding to an arbitrary external
+origin.
+
+### Clerk / Platform DB consistency
+
+The canonical runtime chain is:
+
+``` text
+Platform Person
+-> Clerk public_metadata.platform_person_id
+-> Clerk session JWT platform_person_id
+-> alanwilliams-spring-security ClerkPrincipal
+-> application authorization/domain context
+```
+
+A Person row existing in Platform does not by itself satisfy downstream identity
+projection. The Clerk metadata/JWT claim must also be present. Environment
+migration/reset procedures must therefore treat Platform Person data and the
+corresponding Clerk instance as one identity boundary.
+
+Locked environment mapping:
+
+``` text
+LOCAL       = original AlanWilliams Apps Clerk Development + local Platform DB
+TEST        = dedicated AlanWilliams Apps Test Clerk Development + platform_test
+PRODUCTION  = AlanWilliams Apps Clerk Production + platform_prod
+```
+
+Do not mix Person databases across Clerk instances. If an environment is
+re-pointed to another Clerk instance, intentionally reconcile or reset stale
+Person/linkage data before testing onboarding. The September 2026 test and
+production onboarding verification exposed stale Person rows whose Clerk users
+had no metadata; clearing disposable stale rows allowed the normal onboarding
+flow to recreate the Person and metadata linkage successfully.
+
+Only Platform holds `CLERK_SECRET_KEY` and modifies Clerk user metadata.
+Consumer apps require issuer/authorized-party configuration and the frontend
+publishable key, but must not receive the Clerk secret merely to resolve Person
+data.
+
+### Private package deployment contract
+
+GitHub Actions deployments that build private npm/Maven dependencies require
+`packages: read` and expose the workflow `GITHUB_TOKEN` to the Compose build
+process. Docker builds pass package credentials through BuildKit secrets; they
+must not be committed or baked into runtime images.
+
