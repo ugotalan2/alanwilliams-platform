@@ -9,6 +9,7 @@ import App from './App'
 import { ThemeProvider } from '@ugotalan2/ui'
 import ProfileProvider from './pages/account/ProfileProvider'
 import OnboardingGate from "./pages/account/OnboardingGate.tsx";
+import DefaultAppRedirectGate from "./pages/account/DefaultAppRedirectGate.tsx";
 
 const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -22,7 +23,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <ThemeProvider>
                 <ProfileProvider>
                     <OnboardingGate>
-                        <App />
+                        <DefaultAppRedirectGate>
+                            <App />
+                        </DefaultAppRedirectGate>
                     </OnboardingGate>
                 </ProfileProvider>
             </ThemeProvider>

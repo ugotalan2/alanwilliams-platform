@@ -38,7 +38,7 @@ export function getValidatedPlatformReturnTo(
             return null
         }
 
-        return url.origin
+        return url.toString()
     } catch {
         return null
     }
